@@ -2,14 +2,8 @@
 defineOptions({
   name: 'IndexPage',
 })
-const user = useUserStore()
-const name = ref(user.savedName)
 
-const router = useRouter()
-function go() {
-  if (name.value)
-    router.push(`/hi/${encodeURIComponent(name.value)}`)
-}
+// const router = useRouter()
 
 const { t } = useI18n()
 useHead({
@@ -18,42 +12,69 @@ useHead({
 </script>
 
 <template>
-  <div>
-    <div text-4xl>
-      <div i-carbon-campsite inline-block />
-    </div>
-    <p>
-      <a rel="noreferrer" href="https://github.com/antfu/vitesse" target="_blank">
-        Vitesse
-      </a>
-    </p>
-    <p>
-      <em text-sm opacity-75>{{ t('intro.desc') }}</em>
-    </p>
+  <div />
+  <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-4 sm:grid-cols-2">
+    <Card title="库游戏数" hoverable>
+      <p class="text-3xl font-bold">
+        500
+      </p>
+      <p class="text-sm text-gray-500">
+        刮削游戏数
+      </p>
+    </Card>
 
-    <div py-4 />
+    <Card title="本地游戏数" hoverable>
+      <p class="text-3xl font-bold">
+        128
+      </p>
+      <p class="text-sm text-gray-500">
+        保存的游戏数
+      </p>
+    </Card>
 
-    <TheInput
-      v-model="name"
-      :placeholder="t('intro.whats-your-name')"
-      autocomplete="false"
-      @keydown.enter="go"
-    />
-    <label class="hidden" for="input">{{ t('intro.whats-your-name') }}</label>
+    <Card title="标签数" hoverable>
+      <p class="text-3xl font-bold">
+        98
+      </p>
+      <p class="text-sm text-gray-500">
+        标签总数
+      </p>
+    </Card>
 
-    <div>
-      <button
-        m-3 text-sm btn
-        :disabled="!name"
-        @click="go"
-      >
-        {{ t('button.go') }}
-      </button>
-    </div>
+    <Card title="使用的标签数" hoverable>
+      <p class="text-3xl font-bold">
+        88
+      </p>
+      <p class="text-sm text-gray-500">
+        关联游戏的标签数
+      </p>
+    </Card>
+  </div>
+
+  <hr un-border="b-2 gray-100 dark:gray-700">
+
+  <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-4 sm:grid-cols-2">
+    <Card title="游戏系列" hoverable>
+      <ul>
+        <li>1</li>
+        <li>1</li>
+        <li>1</li>
+        <li>1</li>
+      </ul>
+    </Card>
+
+    <Card title="游玩列表" hoverable>
+      <ul>
+        <li>1</li>
+        <li>1</li>
+        <li>1</li>
+        <li>1</li>
+      </ul>
+    </Card>
   </div>
 </template>
 
 <route lang="yaml">
 meta:
-  layout: home
+  layout: default
 </route>
