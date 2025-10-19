@@ -12,6 +12,10 @@ export const navItems: NavItem[] = [
 
   { divider: true },
 
-  { name: 'Contact', path: '/contact', icon: 'i-carbon-campsite' },
+  { name: 'LocalLibrary', path: '/library', icon: 'i-carbon-ibm-cloud-bare-metal-server' },
+  { name: 'Scrap', path: '/scrap', icon: 'i-carbon-shopping-cart-arrow-down' },
+
+  { divider: true },
+
   { name: 'GitHub', path: 'https://github.com/antfu-collective/vitesse', external: true, icon: 'i-carbon-logo-github' },
 ]

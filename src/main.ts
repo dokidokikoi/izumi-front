@@ -1,9 +1,12 @@
 import type { UserModule } from './types'
 
+import ElementPlus from 'element-plus'
 import { setupLayouts } from 'virtual:generated-layouts'
 import { ViteSSG } from 'vite-ssg'
 import { routes } from 'vue-router/auto-routes'
 import App from './App.vue'
+import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 
 import '@unocss/reset/tailwind.css'
 import './styles/main.css'
@@ -21,5 +24,6 @@ export const createApp = ViteSSG(
     Object.values(import.meta.glob<{ install: UserModule }>('./modules/*.ts', { eager: true }))
       .forEach(i => i.install?.(ctx))
     // ctx.app.use(Previewer)
+    ctx.app.use(ElementPlus)
   },
 )

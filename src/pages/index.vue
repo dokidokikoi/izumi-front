@@ -3,8 +3,6 @@ defineOptions({
   name: 'IndexPage',
 })
 
-// const router = useRouter()
-
 const { t } = useI18n()
 useHead({
   title: () => t('button.home'),

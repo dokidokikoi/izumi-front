@@ -27,6 +27,8 @@ const route = useRoute()
 
 // 判断是否在游戏列表页面
 const showSearch = computed(() => route.name === '/game/')
+const showScraper = computed(() => route.name === '/scrap/')
+const showEdit = computed(() => route.name === '/game/[id]')
 
 // 搜索框内容
 const searchQuery = ref('')
@@ -63,7 +65,7 @@ function selectSort(option: string) {
         <div i="carbon-list" class="z-20 mr-4 h-6 w-6" />
       </button>
 
-      <img src="/favicon.svg" alt="Logo" class="h-8 w-8">
+      <img src="/pwa-192x192.png" alt="Logo" class="h-8 w-8">
       <span class="text-lg font-bold">Vitesse App</span>
 
       <!-- 搜索框（仅在游戏列表页面显示） -->
@@ -108,6 +110,28 @@ function selectSort(option: string) {
         <!-- 高级搜索 -->
         <button icon-btn class="flex items-center" @click="gameStore.showAdvanced = !gameStore.showAdvanced">
           <div i="carbon-add-alt" class="z-20 mr-4 h-6 w-6" />
+        </button>
+      </template>
+
+      <template v-if="showScraper">
+        <select v-model="gameStore.selectScrapResult" class="mr-6 w64 border rounded px-3 py-2">
+          <option value="" disabled selected>
+            挂削结果
+          </option>
+          <option v-for="s in gameStore.scrapResults" :key="s" :value="s">
+            {{ s }}
+          </option>
+        </select>
+        <!-- 刮削 -->
+        <button icon-btn class="flex items-center" title="刮削" @click="gameStore.showScraper = !gameStore.showScraper">
+          <div i="carbon-download" class="z-20 mr-4 h-6 w-6" />
+        </button>
+      </template>
+
+      <template v-if="showEdit">
+        <!-- 编辑 -->
+        <button icon-btn class="flex items-center" title="编辑" @click="gameStore.showEdit = !gameStore.showEdit">
+          <div i="carbon-edit" class="z-20 mr-4 h-6 w-6" />
         </button>
       </template>
 

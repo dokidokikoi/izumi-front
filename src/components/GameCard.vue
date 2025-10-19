@@ -1,15 +1,9 @@
 <script setup lang="ts">
+import type { Game } from '~/types'
+import { imageUrl } from '~/utils/image'
+
 defineProps<{
-  game: {
-    id: number
-    cover: string
-    name: string
-    createdAt: string
-    type: string
-    tags: string[]
-    publisher: string
-    inLibrary: boolean
-  }
+  game: Partial<Game>
 }>()
 </script>
 
@@ -20,19 +14,19 @@ defineProps<{
     <!-- 封面图容器，固定 9:12 比例 -->
     <div class="aspect-[9/12] w-full overflow-hidden">
       <img
-        :src="game.cover"
+        :src="imageUrl(game.cover)"
         :alt="game.name"
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
       >
     </div>
 
     <!-- 入库标识 -->
-    <div
+    <!-- <div
       v-if="game.inLibrary"
       class="absolute left-2 top-2 rounded-md bg-green-600 px-2 py-1 text-xs text-white shadow"
     >
       已入库
-    </div>
+    </div> -->
 
     <!-- 底部信息面板：默认隐藏，hover时滑出 -->
     <div
@@ -42,21 +36,21 @@ defineProps<{
         {{ game.name }}
       </h3>
       <p class="text-xs opacity-80">
-        发行公司: {{ game.publisher }}
+        发行公司: {{ game.developer?.name }}
       </p>
       <p class="text-xs opacity-80">
-        类型: {{ game.type }}
+        类型: {{ game.category?.name }}
       </p>
       <p class="text-xs opacity-80">
-        时间: {{ game.createdAt }}
+        时间: {{ game.issue_date }}
       </p>
       <div class="mt-1 flex flex-wrap gap-1">
         <span
           v-for="tag in game.tags"
-          :key="tag"
+          :key="tag.id"
           class="rounded-md bg-white/20 px-2 py-0.5 text-[10px]"
         >
-          {{ tag }}
+          {{ tag.name }}
         </span>
       </div>
     </div>

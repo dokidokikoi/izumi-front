@@ -1,0 +1,170 @@
+<script setup lang="ts">
+import type {
+  ScraperDetailReq,
+  ScraperGetRespItem,
+  ScraperSearchReq,
+} from '~/types'
+import { ElNotification } from 'element-plus'
+import { scrapApi } from '~/apis/game'
+import { useGameStore } from '~/stores/gameStore'
+import { useWebSocket } from '~/utils/websocket'
+
+const route = useRoute()
+const gameStore = useGameStore()
+const searchParam = ref<Partial<ScraperSearchReq>>({
+  name: 'all',
+  keyword: '彼女',
+  page: 1,
+})
+const requestId = ref('')
+const scrapers = ref([
+  { label: 'all', value: 'all' },
+  { label: 'bangumi', value: 'bangumi' },
+  { label: 'dlsite', value: 'dlsite' },
+  { label: 'getchu', value: 'getchu' },
+  { label: 'ggbases', value: 'ggbases' },
+  { label: '2dfan', value: '2dfan' },
+])
+
+const games = ref<ScraperGetRespItem[]>([])
+const scrapGames = ref(new Map<string, ScraperGetRespItem[]>())
+
+const selectedGames = ref<ScraperGetRespItem[]>([])
+
+function handleSearch() {
+  scrapApi.search(searchParam.value).then((res) => {
+    requestId.value = res.data
+  })
+}
+
+searchParam.value.keyword = route.query.keyword as string
+
+function toggleSelect(game: ScraperGetRespItem) {
+  if (selectedGames.value.find(g => g.url === game.url)) {
+    selectedGames.value = selectedGames.value.filter(g => g.url !== game.url)
+  }
+  else {
+    selectedGames.value.push(game)
+  }
+}
+
+// 监听 searchTrigger，执行搜索
+watch(
+  () => gameStore.selectScrapResult,
+  (newVal) => {
+    if (newVal) {
+      games.value = scrapGames.value.get(newVal) ?? []
+    }
+  },
+)
+
+// 监听 selectScrapResult，执行刮削
+const scraperDetailReq = ref<ScraperDetailReq>({
+  request_id: '',
+  objs: [],
+})
+watch(
+  () => gameStore.showScraper,
+  (newVal) => {
+    if (newVal) {
+      scraperDetailReq.value.objs = []
+      for (const item of selectedGames.value) {
+        scraperDetailReq.value?.objs.push({
+          name: item.scraper_name,
+          url: item.url,
+        })
+      }
+      scrapApi.scrap(scraperDetailReq.value)
+    }
+  },
+)
+
+const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_search')
+if (connection && connection.value) {
+  connection.value.onmessage = function (event) {
+    const data = JSON.parse(event.data)
+    if (data.event === 'search') {
+      if (data.message === 'success') {
+        scrapApi.get(data.rid).then((res) => {
+          scrapGames.value.clear()
+          gameStore.scrapResults = []
+          for (const item in res.data) {
+            gameStore.scrapResults.push(item)
+            scrapGames.value.set(item, res.data[item])
+          }
+        })
+      }
+      ElNotification({
+        title: 'Title',
+        message: data.message,
+        type: 'success',
+        duration: 5000,
+        position: 'bottom-right',
+      })
+    }
+  }
+}
+</script>
+
+<template>
+  <div class="h-screen flex flex-col" style="height: calc(100vh - 112px);">
+    <!-- 顶部搜索栏 -->
+    <div class="flex items-center gap-4 border-b px-4 pb-4">
+      <input
+        v-model="searchParam.keyword"
+        type="text"
+        placeholder="输入游戏名称..."
+        class="flex-1 border rounded px-3 py-2"
+      >
+      <input
+        v-model.number="searchParam.page"
+        type="text"
+        placeholder="分页"
+        class="w-20 border rounded px-3 py-2"
+      >
+      <select v-model="searchParam.name" class="border rounded px-3 py-2">
+        <option v-for="s in scrapers" :key="s.value" :value="s.value">
+          {{ s.label }}
+        </option>
+      </select>
+      <button
+        class="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+        @click="handleSearch"
+      >
+        搜索
+      </button>
+    </div>
+
+    <!-- 主体区域 -->
+    <div class="flex flex-1 overflow-hidden">
+      <div
+        class="grid grid auto-rows-max grid-cols-1 flex-1 gap-4 gap-6 overflow-y-auto p-4 p-4 2xl:grid-cols-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5"
+      >
+        <GameCard
+          v-for="g in games"
+          :key="g.url"
+          :game="g"
+          class="cursor-pointer"
+          @click="toggleSelect(g)"
+        />
+      </div>
+
+      <!-- 右侧已选择竖条，固定 -->
+      <div class="w-38 overflow-y-auto border-l bg-gray-50 p-4 dark:bg-gray-700">
+        <h2 class="mb-2 font-bold">
+          已选择
+        </h2>
+        <GameCard
+          v-for="game in selectedGames"
+          :key="game.url"
+          :game="game"
+          class="cursor-pointer"
+          mb-4
+          @click="toggleSelect(game)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <GameMergeDialog :visible="gameStore.showScraper" @close="gameStore.showScraper = false" />
+</template>

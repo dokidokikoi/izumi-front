@@ -12,6 +12,11 @@ body,
 html.dark {
   background: #121212;
   color-scheme: dark;
+  --el-fill-color-blank: #3b3b3b;
+  --el-border-color: white;
+  --el-border-color-hover: white;
+  --el-border-color-focus: white;
+  --el-text-color-placeholder: white;
 }
 
 #nprogress {

@@ -3,7 +3,7 @@
 // you can use this to manipulate the document head in any components,
 // they will be rendered correctly in the html results with vite-ssg
 useHead({
-  title: 'Vitesse',
+  title: 'Izumi',
   meta: [
     {
       name: 'description',
@@ -17,8 +17,8 @@ useHead({
   link: [
     {
       rel: 'icon',
-      type: 'image/svg+xml',
-      href: () => preferredDark.value ? '/favicon-dark.svg' : '/favicon.svg',
+      type: 'image/png',
+      href: () => 'favicon-32x32.png',
     },
   ],
 })

@@ -1,258 +1,80 @@
 <script setup lang="ts">
+import type { Category, Developer, Game, GameListReq, Series, Tag } from '~/types'
+import { categoryApi, developerApi, gameApi, seriesApi, tagApi } from '~/apis/game'
 import { useGameStore } from '~/stores/gameStore'
 
+const router = useRouter()
 const gameStore = useGameStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 
-const allGames = [
-  {
-    id: 1,
-    cover: 'https://picsum.photos/400/200?random=1',
-    name: 'Elden Ring',
-    createdAt: '2022-02-25',
-    type: 'RPG',
-    tags: ['开放世界', '魂系', '冒险'],
-    publisher: 'FromSoftware',
-    inLibrary: true,
-  },
-  {
-    id: 2,
-    cover: '//img.dlsite.jp/modpub/images2/work/professional/VJ014000/VJ013965_img_main.jpg',
-    name: 'Cyberpunk 2077',
-    createdAt: '2020-12-10',
-    type: '动作角色扮演',
-    tags: ['科幻', '开放世界', '射击'],
-    publisher: 'CD Projekt',
-    inLibrary: false,
-  },
-  {
-    id: 3,
-    cover: 'https://picsum.photos/400/200?random=3',
-    name: 'Genshin Impact',
-    createdAt: '2020-09-28',
-    type: '动作角色扮演',
-    tags: ['二次元', '抽卡', '开放世界'],
-    publisher: 'miHoYo',
-    inLibrary: true,
-  },
-  {
-    id: 4,
-    cover: 'https://picsum.photos/400/200?random=4',
-    name: 'Baldur’s Gate 3',
-    createdAt: '2023-08-03',
-    type: 'RPG',
-    tags: ['回合制', 'DND', '多人'],
-    publisher: 'Larian Studios',
-    inLibrary: false,
-  },
-  {
-    id: 1,
-    cover: 'https://picsum.photos/400/200?random=1',
-    name: 'Elden Ring',
-    createdAt: '2022-02-25',
-    type: 'RPG',
-    tags: ['开放世界', '魂系', '冒险'],
-    publisher: 'FromSoftware',
-    inLibrary: true,
-  },
-  {
-    id: 2,
-    cover: '//img.dlsite.jp/modpub/images2/work/professional/VJ014000/VJ013965_img_main.jpg',
-    name: 'Cyberpunk 2077',
-    createdAt: '2020-12-10',
-    type: '动作角色扮演',
-    tags: ['科幻', '开放世界', '射击'],
-    publisher: 'CD Projekt',
-    inLibrary: false,
-  },
-  {
-    id: 3,
-    cover: 'https://picsum.photos/400/200?random=3',
-    name: 'Genshin Impact',
-    createdAt: '2020-09-28',
-    type: '动作角色扮演',
-    tags: ['二次元', '抽卡', '开放世界'],
-    publisher: 'miHoYo',
-    inLibrary: true,
-  },
-  {
-    id: 4,
-    cover: 'https://picsum.photos/400/200?random=4',
-    name: 'Baldur’s Gate 3',
-    createdAt: '2023-08-03',
-    type: 'RPG',
-    tags: ['回合制', 'DND', '多人'],
-    publisher: 'Larian Studios',
-    inLibrary: false,
-  },
-  {
-    id: 1,
-    cover: 'https://picsum.photos/400/200?random=1',
-    name: 'Elden Ring',
-    createdAt: '2022-02-25',
-    type: 'RPG',
-    tags: ['开放世界', '魂系', '冒险'],
-    publisher: 'FromSoftware',
-    inLibrary: true,
-  },
-  {
-    id: 2,
-    cover: '//img.dlsite.jp/modpub/images2/work/professional/VJ014000/VJ013965_img_main.jpg',
-    name: 'Cyberpunk 2077',
-    createdAt: '2020-12-10',
-    type: '动作角色扮演',
-    tags: ['科幻', '开放世界', '射击'],
-    publisher: 'CD Projekt',
-    inLibrary: false,
-  },
-  {
-    id: 3,
-    cover: 'https://picsum.photos/400/200?random=3',
-    name: 'Genshin Impact',
-    createdAt: '2020-09-28',
-    type: '动作角色扮演',
-    tags: ['二次元', '抽卡', '开放世界'],
-    publisher: 'miHoYo',
-    inLibrary: true,
-  },
-  {
-    id: 4,
-    cover: 'https://picsum.photos/400/200?random=4',
-    name: 'Baldur’s Gate 3',
-    createdAt: '2023-08-03',
-    type: 'RPG',
-    tags: ['回合制', 'DND', '多人'],
-    publisher: 'Larian Studios',
-    inLibrary: false,
-  },
-  {
-    id: 1,
-    cover: 'https://picsum.photos/400/200?random=1',
-    name: 'Elden Ring',
-    createdAt: '2022-02-25',
-    type: 'RPG',
-    tags: ['开放世界', '魂系', '冒险'],
-    publisher: 'FromSoftware',
-    inLibrary: true,
-  },
-  {
-    id: 2,
-    cover: '//img.dlsite.jp/modpub/images2/work/professional/VJ014000/VJ013965_img_main.jpg',
-    name: 'Cyberpunk 2077',
-    createdAt: '2020-12-10',
-    type: '动作角色扮演',
-    tags: ['科幻', '开放世界', '射击'],
-    publisher: 'CD Projekt',
-    inLibrary: false,
-  },
-  {
-    id: 3,
-    cover: 'https://picsum.photos/400/200?random=3',
-    name: 'Genshin Impact',
-    createdAt: '2020-09-28',
-    type: '动作角色扮演',
-    tags: ['二次元', '抽卡', '开放世界'],
-    publisher: 'miHoYo',
-    inLibrary: true,
-  },
-  {
-    id: 4,
-    cover: 'https://picsum.photos/400/200?random=4',
-    name: 'Baldur’s Gate 3',
-    createdAt: '2023-08-03',
-    type: 'RPG',
-    tags: ['回合制', 'DND', '多人'],
-    publisher: 'Larian Studios',
-    inLibrary: false,
-  },
-]
-const games = ref(allGames)
+const games = ref<Game[]>([])
 
 const loading = ref(false)
 const hasMore = ref(true)
 
 // 高级搜索字段
-const filters = ref({
-  tags: '',
-  series: '',
-  category: '',
-  developer: '',
+const filters = ref<Partial<GameListReq>>({
+  page: 0,
+  page_size: 20,
 })
 
-// 假装有下拉选项（实际可以从API获取）
-const tagOptions = ['动作', '冒险', 'RPG', '开放世界']
-const seriesOptions = ['塞尔达', '魂系列', '最终幻想']
-const categoryOptions = reactive([
-  { id: 1, name: '动作', selected: false },
-  { id: 2, name: '角色扮演', selected: false },
-  { id: 3, name: '策略', selected: false },
-  { id: 4, name: '休闲', selected: false },
-  { id: 1, name: '动作', selected: false },
-  { id: 2, name: '角色扮演', selected: false },
-  { id: 3, name: '策略', selected: false },
-  { id: 4, name: '休闲', selected: false },
-  { id: 1, name: '动作', selected: false },
-  { id: 2, name: '角色扮演', selected: false },
-  { id: 3, name: '策略', selected: false },
-  { id: 4, name: '休闲', selected: false },
-])
-const developerOptions = ['Nintendo', 'FromSoftware', 'Square Enix']
+const categories = ref<Category[]>([])
+const series = ref<Series[]>([])
+const tags = ref<Tag[]>([])
+const developers = ref<Developer[]>([])
 
-// 搜索方法（可以替换成 API 调用）
-function searchGames(query: string) {
-  loading.value = true
-  games.value = allGames.filter(game =>
-    game.name.includes(query),
-  )
-  gameStore.searchTrigger = false
-  setTimeout(() => {
-    loading.value = false
-    games.value.push(...[
-      {
-        id: 1,
-        cover: 'https://picsum.photos/400/200?random=1',
-        name: 'Elden Ring',
-        createdAt: '2022-02-25',
-        type: 'RPG',
-        tags: ['开放世界', '魂系', '冒险'],
-        publisher: 'FromSoftware',
-        inLibrary: true,
-      },
-      {
-        id: 2,
-        cover: '//img.dlsite.jp/modpub/images2/work/professional/VJ014000/VJ013965_img_main.jpg',
-        name: 'Cyberpunk 2077',
-        createdAt: '2020-12-10',
-        type: '动作角色扮演',
-        tags: ['科幻', '开放世界', '射击'],
-        publisher: 'CD Projekt',
-        inLibrary: false,
-      },
-      {
-        id: 3,
-        cover: 'https://picsum.photos/400/200?random=3',
-        name: 'Genshin Impact',
-        createdAt: '2020-09-28',
-        type: '动作角色扮演',
-        tags: ['二次元', '抽卡', '开放世界'],
-        publisher: 'miHoYo',
-        inLibrary: true,
-      },
-      {
-        id: 4,
-        cover: 'https://picsum.photos/400/200?random=4',
-        name: 'Baldur’s Gate 3',
-        createdAt: '2023-08-03',
-        type: 'RPG',
-        tags: ['回合制', 'DND', '多人'],
-        publisher: 'Larian Studios',
-        inLibrary: false,
-      },
-    ])
-  }, 1000)
+// 初始化
+function getCategories() {
+  return categoryApi.list().then((res) => {
+    categories.value = res.data
+  })
+}
+function getSeries() {
+  return seriesApi.list().then((res) => {
+    series.value = res.data.list
+  })
+}
+function getTags() {
+  return tagApi.list().then((res) => {
+    tags.value = res.data.list
+  })
+}
+function getDevelopers() {
+  return developerApi.list().then((res) => {
+    developers.value = res.data.list
+  })
 }
 
-// 监听 searchTrigger，每次 +1 就执行搜索
+getCategories()
+getSeries()
+getTags()
+getDevelopers()
+
+// 搜索方法（可以替换成 API 调用）
+function searchGames(query: string, append: boolean = false) {
+  loading.value = true
+  filters.value.keyword = query
+  if (append) {
+    if (!filters.value.page) {
+      filters.value.page = 0
+    }
+    filters.value.page++
+  }
+  else {
+    filters.value.page = 1
+  }
+  gameApi.search(filters.value).then((res) => {
+    if (!append) {
+      games.value = []
+    }
+    games.value.push(...res.data.list)
+
+    loading.value = false
+    gameStore.searchTrigger = false
+  })
+}
+
+// 监听 searchTrigger，执行搜索
 watch(
   () => gameStore.searchTrigger,
   (newVal) => {
@@ -267,7 +89,7 @@ function initObserver() {
   const observer = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting) {
-        searchGames(gameStore.searchQuery)
+        searchGames(gameStore.searchQuery, true)
       }
     },
     { rootMargin: '100px' }, // 提前100px触发加载
@@ -279,6 +101,10 @@ function initObserver() {
 onMounted(() => {
   initObserver()
 })
+
+function go(id: number) {
+  router.push(`/game/${id}`)
+}
 </script>
 
 <template>
@@ -289,11 +115,11 @@ onMounted(() => {
       class="mt-6 border rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-gray-800"
     >
       <!-- 分类 -->
-      <div class="flex items-center">
+      <!-- <div class="flex items-center">
         <span class="w-20 font-medium">类别：</span>
         <div class="flex flex-1 flex-wrap gap-2">
           <button
-            v-for="cat in categoryOptions"
+            v-for="cat in categories"
             :key="cat.id"
             class="border rounded px-2 text-sm transition" :class="[
               cat.selected
@@ -304,56 +130,61 @@ onMounted(() => {
             {{ cat.name }}
           </button>
         </div>
-      </div>
-      <div
-        class="grid grid-cols-2 mb-4 gap-3 pt4 md:grid-cols-3"
-      >
+      </div> -->
+
+      <el-row>
         <!-- 标签 -->
-        <div class="flex items-center">
-          <span class="w-20 font-medium">标签: </span>
-          <select v-model="filters.tags" class="w-full border rounded px-2 py-1">
-            <option value="">
-              全部
-            </option>
-            <option v-for="tag in tagOptions" :key="tag" :value="tag">
-              {{ tag }}
-            </option>
-          </select>
-        </div>
+        <el-col :span="8">
+          <div class="flex items-center">
+            <span class="w-20 font-medium">标签: </span>
+            <el-select v-model="filters.tags" multiple clearable w-80>
+              <el-option v-for="tag in tags" :key="tag.id" :value="tag.name" :label="tag.name" />
+            </el-select>
+          </div>
+          <div
+            class="grid grid-cols-2 mb-4 gap-3 pt4 md:grid-cols-3"
+          />
+        </el-col>
+      </el-row>
+
+      <el-row>
+        <!-- 分类 -->
+        <el-col :span="8">
+          <div class="flex items-center">
+            <span class="w-20 font-medium">分类: </span>
+            <el-select v-model="filters.category" clearable w-80>
+              <el-option v-for="c in categories" :key="c.id" :value="c.id" :label="c.name" />
+            </el-select>
+          </div>
+        </el-col>
 
         <!-- 系列 -->
-        <div class="flex items-center">
-          <span class="w-20 font-medium">系列: </span>
-          <select v-model="filters.series" class="w-full border rounded px-2 py-1">
-            <option value="">
-              全部
-            </option>
-            <option v-for="s in seriesOptions" :key="s" :value="s">
-              {{ s }}
-            </option>
-          </select>
-        </div>
+        <el-col :span="8">
+          <div class="flex items-center">
+            <span class="w-20 font-medium">系列: </span>
+            <el-select v-model="filters.series" clearable w-80>
+              <el-option v-for="s in series" :key="s.id" :value="s.id" :label="s.name" />
+            </el-select>
+          </div>
+        </el-col>
 
         <!-- 开发商 -->
-        <div class="flex items-center">
-          <span class="w-20 font-medium">开发商: </span>
-          <select v-model="filters.developer" class="w-full border rounded px-2 py-1">
-            <option value="">
-              全部
-            </option>
-            <option v-for="d in developerOptions" :key="d" :value="d">
-              {{ d }}
-            </option>
-          </select>
-        </div>
-      </div>
+        <el-col :span="8">
+          <div class="flex items-center">
+            <span class="w-20 font-medium">开发商: </span>
+            <el-select v-model="filters.developer" clearable w-80>
+              <el-option v-for="d in developers" :key="d.id" :value="d.id" :label="d.name" />
+            </el-select>
+          </div>
+        </el-col>
+      </el-row>
     </div>
   </transition>
 
   <div
-    class="<!-- 默认手机：1列 <!-- ≥640px 平板：2列 <!-- ≥768px 中屏：3列 <!-- ≥1024px 大屏：4列 <!-- ≥1280px 超大屏：5列 <!-- ≥1536px 超宽屏：6列 3xl:grid-cols-8 <!-- ≥1536px 超宽屏：8列 --> --> --> --> --> --> --> grid grid-cols-1 gap-6 p-4 2xl:grid-cols-7 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5"
+    class="grid grid-cols-1 gap-6 p-4 2xl:grid-cols-7 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5"
   >
-    <GameCard v-for="game in games" :key="game.id" :game="game" />
+    <GameCard v-for="game in games" :key="game.id" :game="game" @click="go(game.id)" />
   </div>
 
   <!-- 加载提示 -->

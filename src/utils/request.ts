@@ -1,15 +1,14 @@
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
-
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
-  baseURL: '/api', // 统一的请求前缀，可以改成后端地址
+  baseURL: import.meta.env.VITE_API_BASE || window.location.origin.concat('/api'),
   timeout: 10000, // 超时时间
 })
 
 // 请求拦截器
 service.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     // 这里可以加上 token
     const token = localStorage.getItem('token')
     if (token && config.headers) {
@@ -32,7 +31,7 @@ service.interceptors.response.use(
       console.error(res.message || '请求错误')
       return Promise.reject(res)
     }
-    return res.data
+    return res
   },
   (error) => {
     console.error('网络错误:', error.message)

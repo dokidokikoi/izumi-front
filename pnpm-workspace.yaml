@@ -1,5 +1,7 @@
 packages: []
 
+catalog:
+  element-plus: ^2.11.2
 catalogs:
 
   build:
