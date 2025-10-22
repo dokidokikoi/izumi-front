@@ -116,6 +116,11 @@ export interface GameListResponse {
   total: number
 }
 
+export interface Policy {
+  key: string
+  policy: string
+}
+
 //
 export interface GameListReq {
   keyword: string
@@ -195,4 +200,10 @@ export interface PersonSearchReq {
 export interface PathInfo {
   path: string
   is_dir: boolean
+}
+
+//
+export interface UpdatePolicyReq {
+  key: string
+  policy: string
 }

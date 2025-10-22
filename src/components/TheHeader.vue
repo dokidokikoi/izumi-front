@@ -29,6 +29,7 @@ const route = useRoute()
 const showSearch = computed(() => route.name === '/game/')
 const showScraper = computed(() => route.name === '/scrap/')
 const showEdit = computed(() => route.name === '/game/[id]')
+const showUpdateSetting = computed(() => route.name === '/policy')
 
 // 搜索框内容
 const searchQuery = ref('')
@@ -132,6 +133,13 @@ function selectSort(option: string) {
         <!-- 编辑 -->
         <button icon-btn class="flex items-center" title="编辑" @click="gameStore.showEdit = !gameStore.showEdit">
           <div i="carbon-edit" class="z-20 mr-4 h-6 w-6" />
+        </button>
+      </template>
+
+      <template v-if="showUpdateSetting">
+        <!-- 编辑 -->
+        <button icon-btn class="flex items-center" title="提交" @click="gameStore.showUpdateSetting = !gameStore.showUpdateSetting">
+          <div i="carbon-cloud-upload" class="z-20 mr-4 h-6 w-6" />
         </button>
       </template>
 

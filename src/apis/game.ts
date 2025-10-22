@@ -9,6 +9,7 @@ import type {
   ScraperDetailReq,
   ScraperSearchReq,
   Staff,
+  UpdatePolicyReq,
 } from '~/types'
 import request from '~/utils/request'
 
@@ -147,5 +148,14 @@ export const personApi = {
 export const libraryApi = {
   ls(path: string) {
     return request.get(`/library?path=${path}`)
+  },
+}
+
+export const policyApi = {
+  get() {
+    return request.get<Record<string, string>>(`/policy`)
+  },
+  update(data: UpdatePolicyReq) {
+    return request.patch(`/policy`, data)
   },
 }

@@ -2,7 +2,7 @@
 import type { CollapseModelValue } from 'element-plus'
 import type { PathInfo } from '~/types'
 import { Document, Folder, Select, SwitchFilled } from '@element-plus/icons-vue'
-import { libraryApi } from '~/apis/game'
+import { libraryApi, policyApi } from '~/apis/game'
 
 defineOptions({
   name: 'IndexPage',
@@ -37,7 +37,15 @@ function getName(path: string) {
 }
 
 onMounted(() => {
-  list(library.value)
+  policyApi.get().then((res) => {
+    for (const [k, v] of Object.entries(res.data)) {
+      if (k === 'system') {
+        library.value = JSON.parse(v).game_library
+        break
+      }
+    }
+    list(library.value)
+  })
 })
 </script>
 

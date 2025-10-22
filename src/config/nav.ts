@@ -8,6 +8,7 @@ export interface NavItem {
 // @unocss-include
 export const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/', icon: 'i-carbon-dashboard' },
+  { name: 'Setting', path: '/policy', icon: 'i-carbon-settings' },
   { name: 'Library', path: '/game', icon: 'i-carbon-game-console' },
 
   { divider: true },
