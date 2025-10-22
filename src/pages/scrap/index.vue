@@ -79,31 +79,33 @@ watch(
   },
 )
 
-const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_search')
-if (connection && connection.value) {
-  connection.value.onmessage = function (event) {
-    const data = JSON.parse(event.data)
-    if (data.event === 'search') {
-      if (data.message === 'success') {
-        scrapApi.get(data.rid).then((res) => {
-          scrapGames.value.clear()
-          gameStore.scrapResults = []
-          for (const item in res.data) {
-            gameStore.scrapResults.push(item)
-            scrapGames.value.set(item, res.data[item])
-          }
+onMounted(() => {
+  const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_search')
+  if (connection && connection.value) {
+    connection.value.onmessage = function (event) {
+      const data = JSON.parse(event.data)
+      if (data.event === 'search') {
+        if (data.message === 'success') {
+          scrapApi.get(data.rid).then((res) => {
+            scrapGames.value.clear()
+            gameStore.scrapResults = []
+            for (const item in res.data) {
+              gameStore.scrapResults.push(item)
+              scrapGames.value.set(item, res.data[item])
+            }
+          })
+        }
+        ElNotification({
+          title: 'Title',
+          message: data.message,
+          type: 'success',
+          duration: 5000,
+          position: 'bottom-right',
         })
       }
-      ElNotification({
-        title: 'Title',
-        message: data.message,
-        type: 'success',
-        duration: 5000,
-        position: 'bottom-right',
-      })
     }
   }
-}
+})
 </script>
 
 <template>

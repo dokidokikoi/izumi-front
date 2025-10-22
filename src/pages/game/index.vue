@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Category, Developer, Game, GameListReq, Series, Tag } from '~/types'
-import { categoryApi, developerApi, gameApi, seriesApi, tagApi } from '~/apis/game'
+import type { Brand, Category, Game, GameListReq, Series, Tag } from '~/types'
+import { brandApi, categoryApi, gameApi, seriesApi, tagApi } from '~/apis/game'
 import { useGameStore } from '~/stores/gameStore'
 
 const router = useRouter()
@@ -21,7 +21,7 @@ const filters = ref<Partial<GameListReq>>({
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
-const developers = ref<Developer[]>([])
+const developers = ref<Brand[]>([])
 
 // 初始化
 function getCategories() {
@@ -40,15 +40,17 @@ function getTags() {
   })
 }
 function getDevelopers() {
-  return developerApi.list().then((res) => {
+  return brandApi.list().then((res) => {
     developers.value = res.data.list
   })
 }
 
-getCategories()
-getSeries()
-getTags()
-getDevelopers()
+onMounted(() => {
+  getCategories()
+  getSeries()
+  getTags()
+  getDevelopers()
+})
 
 // 搜索方法（可以替换成 API 调用）
 function searchGames(query: string, append: boolean = false) {

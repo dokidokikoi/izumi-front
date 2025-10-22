@@ -1,8 +1,9 @@
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
+
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || window.location.origin.concat('/api'),
+  baseURL: import.meta.env.VITE_API_BASE || '/api',
   timeout: 10000, // 超时时间
 })
 
@@ -10,10 +11,6 @@ const service: AxiosInstance = axios.create({
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // 这里可以加上 token
-    const token = localStorage.getItem('token')
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
     return config
   },
   (error) => {

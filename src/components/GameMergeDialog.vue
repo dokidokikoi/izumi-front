@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Category, Character, Developer, Game, GameInstance, Series, Staff, Tag } from '~/types'
+import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
 import { ElNotification } from 'element-plus'
-import { categoryApi, characterApi, developerApi, gameApi, personApi, scrapApi, seriesApi, tagApi } from '~/apis/game'
+import { brandApi, categoryApi, characterApi, gameApi, personApi, scrapApi, seriesApi, tagApi } from '~/apis/game'
 import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
 import { useWebSocket } from '~/utils/websocket'
@@ -27,7 +27,7 @@ const showGameIns = ref(false)
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
-const developers = ref<Developer[]>([])
+const brands = ref<Brand[]>([])
 
 // 初始化
 function getCategories() {
@@ -46,15 +46,17 @@ function getTags() {
   })
 }
 function getDevelopers() {
-  return developerApi.list().then((res) => {
-    developers.value = res.data.list
+  return brandApi.list().then((res) => {
+    brands.value = res.data.list
   })
 }
 
-getCategories()
-getSeries()
-getTags()
-getDevelopers()
+onMounted(() => {
+  getCategories()
+  getSeries()
+  getTags()
+  getDevelopers()
+})
 
 // 图片
 const showAddImage = ref(false)
@@ -245,11 +247,11 @@ function appendDeveloper(d: string | undefined) {
   if (!d) {
     return
   }
-  developerApi.create(d).then((res) => {
+  brandApi.create(d).then((res) => {
     getDevelopers().then(() => {
-      developers.value.forEach((d) => {
+      brands.value.forEach((d) => {
         if (d.id === res.data) {
-          createGame.value.developer = d
+          createGame.value.brand = d
           createDeveloperID.value = res.data
         }
       })
@@ -261,7 +263,7 @@ watch(
   () => createDeveloperID.value,
   (newVal) => {
     if (newVal) {
-      createGame.value.developer = developers.value.find(t => t.id === newVal)
+      createGame.value.brand = brands.value.find(t => t.id === newVal)
     }
   },
 )
@@ -598,27 +600,29 @@ function fetchScrap() {
   })
 }
 
-const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_scrap')
-if (connection && connection.value) {
-  connection.value.onmessage = function (event) {
-    const data = JSON.parse(event.data)
-    rid.value = data.rid
-    if (data.event === 'detail') {
-      if (data.message === 'success') {
-        scrapApi.get(data.rid).then((res) => {
-          scrapAllGames.value = res.data
+onMounted(() => {
+  const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_scrap')
+  if (connection && connection.value) {
+    connection.value.onmessage = function (event) {
+      const data = JSON.parse(event.data)
+      rid.value = data.rid
+      if (data.event === 'detail') {
+        if (data.message === 'success') {
+          scrapApi.get(data.rid).then((res) => {
+            scrapAllGames.value = res.data
+          })
+        }
+        ElNotification({
+          title: 'Title',
+          message: data.message,
+          type: 'success',
+          duration: 5000,
+          position: 'bottom-right',
         })
       }
-      ElNotification({
-        title: 'Title',
-        message: data.message,
-        type: 'success',
-        duration: 5000,
-        position: 'bottom-right',
-      })
     }
   }
-}
+})
 </script>
 
 <template>

@@ -27,7 +27,7 @@ export interface Series {
 }
 
 // 游戏厂商
-export interface Developer {
+export interface Brand {
   id: number
   name: string
   created_at: string
@@ -85,7 +85,7 @@ export interface Game {
   images: string[]
   category: Category | null
   series: Series[]
-  developer: Developer | null
+  brand: Brand | null
   price: string
   issue_date: string // ISO 时间字符串，例如 "2025-08-25T12:34:56Z"
   story: string

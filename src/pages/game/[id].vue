@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { UploadInstance, UploadRawFile } from 'element-plus'
-import type { Category, Character, Developer, Game, GameInstance, Series, Staff, Tag } from '~/types'
+import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
 import { Clock, FolderOpened, Guide, Monitor, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 import { genFileId } from 'element-plus'
-import { categoryApi, developerApi, gameApi, personApi, seriesApi, tagApi } from '~/apis/game'
+import { brandApi, categoryApi, gameApi, personApi, seriesApi, tagApi } from '~/apis/game'
 
 import { imageUrl } from '~/utils/image'
 
@@ -18,7 +18,7 @@ const editGameIns = ref<GameInstance[]>([])
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
-const developers = ref<Developer[]>([])
+const developers = ref<Brand[]>([])
 
 const gameStore = useGameStore()
 
@@ -31,8 +31,8 @@ function getGame() {
     if (res.data.category) {
       createCategoryID.value = res.data.category.id
     }
-    if (res.data.developer) {
-      createDeveloperID.value = res.data.developer.id
+    if (res.data.brand) {
+      createDeveloperID.value = res.data.brand.id
     }
   })
 }
@@ -61,7 +61,7 @@ function getTags() {
   })
 }
 function getDevelopers() {
-  return developerApi.list().then((res) => {
+  return brandApi.list().then((res) => {
     developers.value = res.data.list
   })
 }
@@ -120,11 +120,11 @@ function appendDeveloper(d: string | undefined) {
   if (!d) {
     return
   }
-  developerApi.create(d).then((res) => {
+  brandApi.create(d).then((res) => {
     getDevelopers().then(() => {
       developers.value.forEach((d) => {
         if (d.id === res.data) {
-          editGame.value.developer = d
+          editGame.value.brand = d
           createDeveloperID.value = res.data
         }
       })
@@ -136,7 +136,7 @@ watch(
   () => createDeveloperID.value,
   (newVal) => {
     if (newVal) {
-      editGame.value.developer = developers.value.find(t => t.id === newVal)
+      editGame.value.brand = developers.value.find(t => t.id === newVal)
     }
   },
 )

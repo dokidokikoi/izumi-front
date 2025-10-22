@@ -81,18 +81,18 @@ export const seriesApi = {
   },
 }
 
-export const developerApi = {
+export const brandApi = {
   create(name: string) {
-    return request.post('/developer', { name })
+    return request.post('/brand', { name })
   },
   list() {
-    return request.get('/developer')
+    return request.get('/brand')
   },
   delete(ids: string[]) {
-    return request.delete(`/developer`, { ids })
+    return request.delete(`/brand`, { ids })
   },
   update(id: number, name: string) {
-    return request.patch(`/developer`, { id, name })
+    return request.patch(`/brand`, { id, name })
   },
 }
 

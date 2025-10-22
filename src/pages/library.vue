@@ -7,7 +7,7 @@ import { libraryApi } from '~/apis/game'
 defineOptions({
   name: 'IndexPage',
 })
-const library = ref('/run/media/doki/软件/downloads/telegram')
+const library = ref('/')
 const libraries = ref<PathInfo[]>([])
 const items = ref(new Map<string, PathInfo[]>())
 const activeNames = ref('')
@@ -36,7 +36,9 @@ function getName(path: string) {
   return path.split('/')[path.split('/').length - 1]
 }
 
-list(library.value)
+onMounted(() => {
+  list(library.value)
+})
 </script>
 
 <template>
