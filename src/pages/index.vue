@@ -10,7 +10,10 @@ useHead({
 </script>
 
 <template>
-  <div />
+  <div w-full>
+    <img src="/pwa-512x512.png" alt="" class="mx-auto h-50 w-50">
+  </div>
+
   <div class="grid grid-cols-1 gap-6 p-6 lg:grid-cols-4 sm:grid-cols-2">
     <Card title="库游戏数" hoverable>
       <p class="text-3xl font-bold">

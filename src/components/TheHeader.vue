@@ -30,6 +30,7 @@ const showSearch = computed(() => route.name === '/game/')
 const showScraper = computed(() => route.name === '/scrap/')
 const showEdit = computed(() => route.name === '/game/[id]')
 const showUpdateSetting = computed(() => route.name === '/policy')
+const showLogo = computed(() => route.name !== '/')
 
 // 搜索框内容
 const searchQuery = ref('')
@@ -66,8 +67,8 @@ function selectSort(option: string) {
         <div i="carbon-list" class="z-20 mr-4 h-6 w-6" />
       </button>
 
-      <img src="/pwa-192x192.png" alt="Logo" class="h-8 w-8">
-      <span class="text-lg font-bold">Vitesse App</span>
+      <img v-show="showLogo" src="/pwa-192x192.png" alt="Logo" class="h-8 w-8">
+      <span class="text-1.4rem font-900">Izumi</span>
 
       <!-- 搜索框（仅在游戏列表页面显示） -->
       <div v-if="showSearch" class="mx-6 max-w-lg flex-1">
