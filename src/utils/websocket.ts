@@ -3,7 +3,7 @@ import { ElNotification } from 'element-plus'
 import { onUnmounted, ref } from 'vue'
 
 export function useWebSocket(path: string, autoReconnect = true) {
-  let prefix = import.meta.env.VITE_API_BASE || window.location.origin.concat('/api')
+  let prefix = import.meta.env.VITE_API_BASE || window.location.origin.concat('/ws')
   prefix = prefix.replace('http://', 'ws://')
   const url = prefix.concat(path)
   const connection = ref<WebSocket | null>(null)
