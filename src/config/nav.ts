@@ -18,5 +18,5 @@ export const navItems: NavItem[] = [
 
   { divider: true },
 
-  { name: 'GitHub', path: 'https://github.com/antfu-collective/vitesse', external: true, icon: 'i-carbon-logo-github' },
+  { name: 'GitHub', path: 'https://github.com/dokidokikoi/izumi', external: true, icon: 'i-carbon-logo-github' },
 ]
