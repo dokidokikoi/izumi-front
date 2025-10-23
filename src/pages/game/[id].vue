@@ -18,12 +18,12 @@ const editGameIns = ref<GameInstance[]>([])
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
-const developers = ref<Brand[]>([])
+const brands = ref<Brand[]>([])
 
 const gameStore = useGameStore()
 
 const createCategoryID = ref<number>(0)
-const createDeveloperID = ref(0)
+const createBrandID = ref(0)
 function getGame() {
   gameApi.get(gameId.value).then((res) => {
     game.value = res.data
@@ -32,7 +32,7 @@ function getGame() {
       createCategoryID.value = res.data.category.id
     }
     if (res.data.brand) {
-      createDeveloperID.value = res.data.brand.id
+      createBrandID.value = res.data.brand.id
     }
   })
 }
@@ -60,9 +60,9 @@ function getTags() {
     tags.value = res.data.list
   })
 }
-function getDevelopers() {
+function getBrands() {
   return brandApi.list().then((res) => {
-    developers.value = res.data.list
+    brands.value = res.data.list
   })
 }
 
@@ -72,7 +72,7 @@ onMounted(() => {
   getTags()
   getCategories()
   getSeries()
-  getDevelopers()
+  getBrands()
 })
 
 // tabs
@@ -114,29 +114,29 @@ function removeAlias(index: number) {
 }
 
 // 游戏发行商
-const createDeveloper = ref<string>('')
-const showAddDeveloper = ref(false)
-function appendDeveloper(d: string | undefined) {
+const createBrand = ref<string>('')
+const showAddBrand = ref(false)
+function appendBrand(d: string | undefined) {
   if (!d) {
     return
   }
   brandApi.create(d).then((res) => {
-    getDevelopers().then(() => {
-      developers.value.forEach((d) => {
+    getBrands().then(() => {
+      brands.value.forEach((d) => {
         if (d.id === res.data) {
           editGame.value.brand = d
-          createDeveloperID.value = res.data
+          createBrandID.value = res.data
         }
       })
     })
   })
 }
-// 监听 createDeveloperID
+// 监听 createBrandID
 watch(
-  () => createDeveloperID.value,
+  () => createBrandID.value,
   (newVal) => {
     if (newVal) {
-      editGame.value.brand = developers.value.find(t => t.id === newVal)
+      editGame.value.brand = brands.value.find(t => t.id === newVal)
     }
   },
 )
@@ -566,24 +566,24 @@ function rmImage(image: string) {
               <span class="font-semibold">厂商：</span>
             </div>
             <div flex-1>
-              <span v-if="!gameStore.showEdit" text-lg>{{ game?.developer?.name }}</span>
+              <span v-if="!gameStore.showEdit" text-lg>{{ game?.brand?.name }}</span>
               <div v-else flex flex-1 flex-wrap items-center>
-                <el-select v-model="createDeveloperID" placeholder="游戏发行商" :empty-values="[null, undefined, 0]" mr-2 w-64>
+                <el-select v-model="createBrandID" placeholder="游戏发行商" :empty-values="[null, undefined, 0]" mr-2 w-64>
                   <el-option
-                    v-for="developer in developers" :key="developer.id"
-                    :value="developer.id"
-                    :label="developer.name"
+                    v-for="brand in brands" :key="brand.id"
+                    :value="brand.id"
+                    :label="brand.name"
                   />
                 </el-select>
                 <input
-                  v-if="showAddDeveloper"
-                  v-model="createDeveloper"
+                  v-if="showAddBrand"
+                  v-model="createBrand"
                   type="text"
                   class="mt-0 flex-1 border rounded p-1"
                   placeholder="输入游戏发行商"
-                  @keydown.enter="() => { appendDeveloper(createDeveloper); showAddDeveloper = false; createDeveloper = '' }"
+                  @keydown.enter="() => { appendBrand(createBrand); showAddBrand = false; createBrand = '' }"
                 >
-                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddDeveloper = true">
+                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddBrand = true">
                   <div i="carbon-add-large" class="z-20 h-4 w-4" />
                 </button>
               </div>

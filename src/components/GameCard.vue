@@ -36,7 +36,7 @@ defineProps<{
         {{ game.name }}
       </h3>
       <p class="text-xs opacity-80">
-        发行公司: {{ game.developer?.name }}
+        发行公司: {{ game.brand?.name }}
       </p>
       <p class="text-xs opacity-80">
         类型: {{ game.category?.name }}

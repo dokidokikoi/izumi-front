@@ -32,6 +32,12 @@ export const gameApi = {
   getIns(id: number) {
     return request.get(`/game/ins?id=${id}`)
   },
+  download(id: number) {
+    return request.post(`/game/download`, { game_id: id })
+  },
+  downloadAll() {
+    return request.post(`/game/download/all`)
+  },
 }
 
 export const scrapApi = {

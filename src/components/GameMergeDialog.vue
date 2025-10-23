@@ -45,7 +45,7 @@ function getTags() {
     tags.value = res.data.list
   })
 }
-function getDevelopers() {
+function getBrands() {
   return brandApi.list().then((res) => {
     brands.value = res.data.list
   })
@@ -55,7 +55,7 @@ onMounted(() => {
   getCategories()
   getSeries()
   getTags()
-  getDevelopers()
+  getBrands()
 })
 
 // 图片
@@ -240,27 +240,27 @@ watch(
 )
 
 // 游戏发行商
-const createDeveloper = ref<string>('')
-const showAddDeveloper = ref(false)
-const createDeveloperID = ref(0)
-function appendDeveloper(d: string | undefined) {
+const createBrand = ref<string>('')
+const showAddBrand = ref(false)
+const createBrandID = ref(0)
+function appendBrand(d: string | undefined) {
   if (!d) {
     return
   }
   brandApi.create(d).then((res) => {
-    getDevelopers().then(() => {
+    getBrands().then(() => {
       brands.value.forEach((d) => {
         if (d.id === res.data) {
           createGame.value.brand = d
-          createDeveloperID.value = res.data
+          createBrandID.value = res.data
         }
       })
     })
   })
 }
-// 监听 createDeveloperID
+// 监听 createBrandID
 watch(
-  () => createDeveloperID.value,
+  () => createBrandID.value,
   (newVal) => {
     if (newVal) {
       createGame.value.brand = brands.value.find(t => t.id === newVal)
@@ -981,33 +981,33 @@ onMounted(() => {
           <div class="flex items-center">
             <label class="mr-4 w22 text-center text-right font-medium">发行商</label>
             <div flex flex-1 flex-wrap items-center>
-              <el-select v-model="createDeveloperID" placeholder="游戏发行商" :empty-values="[null, undefined, 0]" style="width: 240px" mr-2>
+              <el-select v-model="createBrandID" placeholder="游戏发行商" :empty-values="[null, undefined, 0]" style="width: 240px" mr-2>
                 <el-option
-                  v-for="developer in developers" :key="developer.id"
-                  :value="developer.id"
-                  :label="developer.name"
+                  v-for="brand in brands" :key="brand.id"
+                  :value="brand.id"
+                  :label="brand.name"
                 />
               </el-select>
               <input
-                v-if="showAddDeveloper"
-                v-model="createDeveloper"
+                v-if="showAddBrand"
+                v-model="createBrand"
                 type="text"
                 class="mt-0 flex-1 border rounded p-1"
                 placeholder="输入游戏发行商"
-                @keydown.enter="() => { appendDeveloper(createDeveloper); showAddDeveloper = false; createDeveloper = '' }"
+                @keydown.enter="() => { appendBrand(createBrand); showAddBrand = false; createBrand = '' }"
               >
-              <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddDeveloper = true">
+              <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddBrand = true">
                 <div i="carbon-add-large" class="z-20 h-4 w-4" />
               </button>
             </div>
           </div>
-          <button class="flex items-center rounded-full bg-green-500 p2" @click="appendDeveloper(scrapAllGames[scrapGameIndex]?.developer?.name)">
+          <button class="flex items-center rounded-full bg-green-500 p2" @click="appendBrand(scrapAllGames[scrapGameIndex]?.brand?.name)">
             <div i="carbon-arrow-left" class="z-20 h-6 w-6" />
           </button>
           <div class="flex items-center">
             <label class="mr-4 w22 text-center text-right font-medium">发行商</label>
             <p class="flex-1 border rounded bg-gray-50 p-2 text-left dark:bg-gray-600">
-              {{ scrapAllGames[scrapGameIndex]?.developer?.name }}
+              {{ scrapAllGames[scrapGameIndex]?.brand?.name }}
             </p>
           </div>
 

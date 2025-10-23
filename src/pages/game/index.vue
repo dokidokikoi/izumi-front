@@ -16,12 +16,13 @@ const hasMore = ref(true)
 const filters = ref<Partial<GameListReq>>({
   page: 0,
   page_size: 20,
+  order_by: 'id desc',
 })
 
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
-const developers = ref<Brand[]>([])
+const brands = ref<Brand[]>([])
 
 // 初始化
 function getCategories() {
@@ -39,9 +40,9 @@ function getTags() {
     tags.value = res.data.list
   })
 }
-function getDevelopers() {
+function getBrands() {
   return brandApi.list().then((res) => {
-    developers.value = res.data.list
+    brands.value = res.data.list
   })
 }
 
@@ -49,13 +50,14 @@ onMounted(() => {
   getCategories()
   getSeries()
   getTags()
-  getDevelopers()
+  getBrands()
 })
 
 // 搜索方法（可以替换成 API 调用）
 function searchGames(query: string, append: boolean = false) {
   loading.value = true
   filters.value.keyword = query
+  filters.value.order_by = gameStore.sortBy
   if (append) {
     if (!filters.value.page) {
       filters.value.page = 0
@@ -73,6 +75,11 @@ function searchGames(query: string, append: boolean = false) {
 
     loading.value = false
     gameStore.searchTrigger = false
+  }).catch(() => {
+    if (filters.value.page) {
+      filters.value.page--
+      gameStore.searchTrigger = false
+    }
   })
 }
 
@@ -174,8 +181,8 @@ function go(id: number) {
         <el-col :span="8">
           <div class="flex items-center">
             <span class="w-20 font-medium">开发商: </span>
-            <el-select v-model="filters.developer" clearable w-80>
-              <el-option v-for="d in developers" :key="d.id" :value="d.id" :label="d.name" />
+            <el-select v-model="filters.brand" clearable w-80>
+              <el-option v-for="d in brands" :key="d.id" :value="d.id" :label="d.name" />
             </el-select>
           </div>
         </el-col>

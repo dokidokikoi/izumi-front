@@ -129,7 +129,7 @@ export interface GameListReq {
   category: number
   staff: number
   character: number
-  developer: number
+  brand: number
 
   page: number
   page_size: number

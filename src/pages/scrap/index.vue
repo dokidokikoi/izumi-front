@@ -112,25 +112,23 @@ onMounted(() => {
   <div class="h-screen flex flex-col" style="height: calc(100vh - 112px);">
     <!-- 顶部搜索栏 -->
     <div class="flex items-center gap-4 border-b px-4 pb-4">
-      <input
+      <el-input
         v-model="searchParam.keyword"
         type="text"
         placeholder="输入游戏名称..."
-        class="flex-1 border rounded px-3 py-2"
-      >
-      <input
+        class="flex-1"
+      />
+      <el-input
         v-model.number="searchParam.page"
         type="text"
         placeholder="分页"
-        class="w-20 border rounded px-3 py-2"
-      >
-      <select v-model="searchParam.name" class="border rounded px-3 py-2">
-        <option v-for="s in scrapers" :key="s.value" :value="s.value">
-          {{ s.label }}
-        </option>
-      </select>
+        class="w16"
+      />
+      <el-select v-model="searchParam.name" class="w32">
+        <el-option v-for="s in scrapers" :key="s.value" :value="s.value" :label="s.label" />
+      </el-select>
       <button
-        class="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+        class="rounded bg-blue-500 px-4 py-1 text-3.6 text-white transition"
         @click="handleSearch"
       >
         搜索

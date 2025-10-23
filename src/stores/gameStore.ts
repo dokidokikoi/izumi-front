@@ -27,6 +27,7 @@ export const useGameStore = defineStore('game', () => {
 
   return {
     searchQuery,
+    sortBy,
     searchTrigger,
     showAdvanced,
     showScraper,
