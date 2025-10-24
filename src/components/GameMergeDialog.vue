@@ -1018,15 +1018,13 @@ onMounted(() => {
               <div absolute right-0 top--2 flex items-center>
                 <el-select
                   v-model="searchCharacterID"
-                  filterable
-                  remote
-                  reserve-keyword
+
                   placeholder="搜索角色"
                   :remote-method="searchCharacter"
                   :loading="searchCharacterLoading"
                   :empty-values="[null, undefined, 0]"
-                  clearable
-                  w-80
+
+                  clearable filterable remote reserve-keyword w-80
                 >
                   <el-option
                     v-for="c in characters"
@@ -1490,6 +1488,14 @@ onMounted(() => {
             <el-option
               label="繁中"
               value="zh-TW"
+            />
+            <el-option
+              label="中文"
+              value="zh"
+            />
+            <el-option
+              label="机翻中文"
+              value="mt-zh"
             />
             <el-option
               label="英语"

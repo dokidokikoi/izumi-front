@@ -24,13 +24,14 @@
     "nprogress": "catalog:frontend",
     "pinia": "catalog:frontend",
     "vue": "catalog:frontend",
-    "vue-easy-lightbox": "catalog:frontend",
     "vue-i18n": "catalog:frontend",
     "vue-router": "catalog:frontend"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
     "@iconify-json/carbon": "catalog:dev",
+    "@iconify-json/devicon": "catalog:dev",
+    "@iconify-json/lineicons": "catalog:dev",
     "@intlify/unplugin-vue-i18n": "catalog:build",
     "@shikijs/markdown-it": "catalog:build",
     "@types/markdown-it-link-attributes": "catalog:types",
