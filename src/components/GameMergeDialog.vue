@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
-import { ElNotification } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { brandApi, categoryApi, characterApi, gameApi, personApi, scrapApi, seriesApi, tagApi } from '~/apis/game'
+import { genderEnum, languageEnum, platformEnum, roleEnum, workEnum } from '~/config/enum'
 import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
 import { useWebSocket } from '~/utils/websocket'
@@ -57,6 +58,16 @@ onMounted(() => {
   getTags()
   getBrands()
 })
+
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('复制成功')
+  }
+  catch (err) {
+    console.error('复制失败:', err)
+  }
+};
 
 // 图片
 const showAddImage = ref(false)
@@ -709,7 +720,15 @@ onMounted(() => {
             <label class="mr-4 w22 text-center text-right font-medium">图片</label>
             <details flex-1 text-left :open="imageDetails" @toggle="imageDetailsToggle">
               <div flex flex-1 flex-wrap items-center>
-                <el-image v-for="image in scrapAllGames[scrapGameIndex]?.images" :key="image" fit="cover" :src="imageUrl(image)" class="h-40 w-50 cursor-pointer object-cover" alt="" @click="toggleImage(image)" />
+                <el-image
+                  v-for="image in scrapAllGames[scrapGameIndex]?.images"
+                  :key="image" fit="cover"
+                  :src="imageUrl(image)"
+                  class="h-40 w-50 cursor-pointer object-cover"
+                  alt=""
+                  @click="toggleImage(image)"
+                  @contextmenu.prevent="copyText(image)"
+                />
               </div>
             </details>
           </div>
@@ -1018,15 +1037,13 @@ onMounted(() => {
               <div absolute right-0 top--2 flex items-center>
                 <el-select
                   v-model="searchCharacterID"
-                  filterable
-                  remote
-                  reserve-keyword
+
                   placeholder="搜索角色"
                   :remote-method="searchCharacter"
                   :loading="searchCharacterLoading"
                   :empty-values="[null, undefined, 0]"
-                  clearable
-                  w-80
+
+                  clearable filterable remote reserve-keyword w-80
                 >
                   <el-option
                     v-for="c in characters"
@@ -1076,30 +1093,16 @@ onMounted(() => {
                           <div flex>
                             <el-select v-model="createGame.characters[idx].gender" placeholder="性别" style="width: 120px" mr-4>
                               <el-option
-                                label="男"
-                                value="male"
-                              />
-                              <el-option
-                                label="女"
-                                value="female"
-                              />
-                              <el-option
-                                label="扶她"
-                                value="futa"
+                                v-for="(v, k) in genderEnum" :key="k"
+                                :label="v"
+                                :value="k"
                               />
                             </el-select>
                             <el-select v-model="createGame.characters[idx].relation" placeholder="角色" style="width: 120px">
                               <el-option
-                                label="主角"
-                                value="main"
-                              />
-                              <el-option
-                                label="配角"
-                                value="minor"
-                              />
-                              <el-option
-                                label="路人"
-                                value="mob"
+                                v-for="(v, k) in roleEnum" :key="k"
+                                :label="v"
+                                :value="k"
                               />
                             </el-select>
                           </div>
@@ -1254,36 +1257,18 @@ onMounted(() => {
                           <div mb-2>
                             <el-select v-model="createGame.staff[idx].gender" placeholder="性别" style="width: 240px">
                               <el-option
-                                label="男"
-                                value="male"
-                              />
-                              <el-option
-                                label="女"
-                                value="female"
-                              />
-                              <el-option
-                                label="扶她"
-                                value="futa"
+                                v-for="(v, k) in genderEnum" :key="k"
+                                :label="v"
+                                :value="k"
                               />
                             </el-select>
                           </div>
                           <div>
                             <el-select v-model="createGame.staff[idx].relation" multiple placeholder="分工" style="width: 240px">
                               <el-option
-                                label="剧本"
-                                value="writer"
-                              />
-                              <el-option
-                                label="原画"
-                                value="painter"
-                              />
-                              <el-option
-                                label="声优"
-                                value="cv"
-                              />
-                              <el-option
-                                label="音乐"
-                                value="music"
+                                v-for="(v, k) in workEnum" :key="k"
+                                :label="v"
+                                :value="k"
                               />
                             </el-select>
                           </div>
@@ -1461,7 +1446,7 @@ onMounted(() => {
         </div>
       </el-col>
       <el-col :span="20">
-        <input type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏路径">
+        <input v-model="createGameIns.path" type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏路径">
       </el-col>
     </el-row>
     <el-row :gutter="4" mb-2>
@@ -1471,7 +1456,7 @@ onMounted(() => {
         </div>
       </el-col>
       <el-col :span="20">
-        <input type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏版本">
+        <input v-model="createGameIns.version" type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏版本">
       </el-col>
     </el-row>
     <el-row :gutter="4" mb-2>
@@ -1484,20 +1469,9 @@ onMounted(() => {
         <div flex items-start>
           <el-select v-model="createGameIns.language" multiple placeholder="游戏语言" clearable style="width: 300px">
             <el-option
-              label="简中"
-              value="zh-CN"
-            />
-            <el-option
-              label="繁中"
-              value="zh-TW"
-            />
-            <el-option
-              label="英语"
-              value="en"
-            />
-            <el-option
-              label="日语"
-              value="ja"
+              v-for="(v, k) in languageEnum" :key="k"
+              :label="v"
+              :value="k"
             />
           </el-select>
         </div>
@@ -1513,21 +1487,11 @@ onMounted(() => {
         <div flex items-start>
           <el-select v-model="createGameIns.platform" multiple placeholder="游戏平台" clearable style="width: 300px">
             <el-option
-              label="Win"
-              value="windows"
-            />
-            <el-option
-              label="Mac"
-              value="macos"
-            />
-            <el-option
-              label="Linux"
-              value="linux"
-            />
-            <el-option
-              label="安卓"
-              value="android"
-            />
+              v-for="(v, k) in platformEnum" :key="k"
+              :value="k"
+            >
+              <div :class="v" />
+            </el-option>
           </el-select>
         </div>
       </el-col>

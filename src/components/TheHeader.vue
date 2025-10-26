@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDark, useToggle } from '@vueuse/core'
+import { ElMessage } from 'element-plus'
 import { gameApi } from '~/apis/game'
 import { loadLanguageAsync } from '~/modules/i18n'
 import { useGameStore } from '~/stores/gameStore'
@@ -40,9 +41,8 @@ const showSortMenu = ref(false)
 
 // 排序选项
 const sortOptions = [
-  { label: '按名称排序', value: 'name' },
-  { label: '按创建时间排序', value: 'createdAt' },
-  { label: '按发行公司排序', value: 'publisher' },
+  { label: '按名称排序', value: 'name desc' },
+  { label: '按创建时间排序', value: 'id desc' },
 ]
 
 const gameStore = useGameStore()
@@ -59,7 +59,9 @@ function selectSort(option: string) {
 function downloadGameInfo() {
   const id = route.params?.id
   if (typeof id === 'string') {
-    gameApi.download(Number(id))
+    gameApi.download(Number(id)).then(() => {
+      ElMessage.success('succeeded')
+    })
   }
 }
 </script>
@@ -120,7 +122,7 @@ function downloadGameInfo() {
       </template>
 
       <template v-if="showScraper">
-        <el-select v-model="gameStore.selectScrapResult" placeholder="挂削结果" class="mr-6 w64">
+        <el-select v-model="gameStore.selectScrapResult" placeholder="挂削结果" class="mr-6 w64" clearable>
           <el-option v-for="s in gameStore.scrapResults" :key="s" :value="s" />
         </el-select>
         <!-- 刮削 -->

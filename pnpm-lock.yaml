@@ -77,6 +77,12 @@ catalogs:
     '@iconify-json/carbon':
       specifier: ^1.2.8
       version: 1.2.8
+    '@iconify-json/devicon':
+      specifier: ^1.2.45
+      version: 1.2.45
+    '@iconify-json/lineicons':
+      specifier: ^1.2.6
+      version: 1.2.6
     '@vue-macros/volar':
       specifier: ^3.0.0-beta.7
       version: 3.0.0-beta.7
@@ -141,9 +147,6 @@ catalogs:
     vue:
       specifier: ^3.5.13
       version: 3.5.13
-    vue-easy-lightbox:
-      specifier: ^1.19.0
-      version: 1.19.0
     vue-i18n:
       specifier: ^11.1.2
       version: 11.1.2
@@ -191,9 +194,6 @@ importers:
       vue:
         specifier: catalog:frontend
         version: 3.5.13(typescript@5.8.2)
-      vue-easy-lightbox:
-        specifier: catalog:frontend
-        version: 1.19.0(vue@3.5.13(typescript@5.8.2))
       vue-i18n:
         specifier: catalog:frontend
         version: 11.1.2(vue@3.5.13(typescript@5.8.2))
@@ -207,6 +207,12 @@ importers:
       '@iconify-json/carbon':
         specifier: catalog:dev
         version: 1.2.8
+      '@iconify-json/devicon':
+        specifier: catalog:dev
+        version: 1.2.45
+      '@iconify-json/lineicons':
+        specifier: catalog:dev
+        version: 1.2.6
       '@intlify/unplugin-vue-i18n':
         specifier: catalog:build
         version: 6.0.5(@vue/compiler-dom@3.5.13)(eslint@9.23.0(jiti@2.4.2))(rollup@4.37.0)(typescript@5.8.2)(vue-i18n@11.1.2(vue@3.5.13(typescript@5.8.2)))(vue@3.5.13(typescript@5.8.2))
@@ -1456,6 +1462,12 @@ packages:
 
   '@iconify-json/carbon@1.2.8':
     resolution: {integrity: sha512-6xh4YiFBz6qoSnB3XMe23WvjTJroDFXB17J1MbiT7nATFe+70+em1acRXr8hgP/gYpwFMHFc4IvjA/IPTPnTzg==}
+
+  '@iconify-json/devicon@1.2.45':
+    resolution: {integrity: sha512-EgowZDawRGJb72FlKKcOPwoMpdDkrqAVWNHhK7qSLI9sYAm7OkfLm/Vvjuqul1XCWA4KBylFv0szWPVpTkzVIg==}
+
+  '@iconify-json/lineicons@1.2.6':
+    resolution: {integrity: sha512-XDOzb5xUNxpOj0j2JPadPq4udrhYb92d6jT7jey9CAJfGhSyYMzk5vmNqWormZy0ETxiHojs2ERpY9KjLjt7rA==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -5987,12 +5999,6 @@ packages:
       '@vue/composition-api':
         optional: true
 
-  vue-easy-lightbox@1.19.0:
-    resolution: {integrity: sha512-YxLXgjEn91UF3DuK1y8u3Pyx2sJ7a/MnBpkyrBSQkvU1glzEJASyAZ7N+5yDpmxBQDVMwCsL2VmxWGIiFrWCgA==}
-    engines: {node: '>=14.18.3'}
-    peerDependencies:
-      vue: ^3.0.0
-
   vue-eslint-parser@10.1.1:
     resolution: {integrity: sha512-bh2Z/Au5slro9QJ3neFYLanZtb1jH+W2bKqGHXAoYD4vZgNG3KeotL7JpPv5xzY4UXUXJl7TrIsnzECH63kd3Q==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -7397,6 +7403,14 @@ snapshots:
   '@humanwhocodes/retry@0.4.2': {}
 
   '@iconify-json/carbon@1.2.8':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/devicon@1.2.45':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/lineicons@1.2.6':
     dependencies:
       '@iconify/types': 2.0.0
 
@@ -12788,10 +12802,6 @@ snapshots:
   vue-component-type-helpers@2.0.7: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.8.2)):
-    dependencies:
-      vue: 3.5.13(typescript@5.8.2)
-
-  vue-easy-lightbox@1.19.0(vue@3.5.13(typescript@5.8.2)):
     dependencies:
       vue: 3.5.13(typescript@5.8.2)
 

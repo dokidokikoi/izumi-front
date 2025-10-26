@@ -1,5 +1,6 @@
 import type { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
@@ -26,8 +27,10 @@ service.interceptors.response.use(
     if (res.code !== 0) {
       // 可以用全局 toast 提示错误
       console.error(res.message || '请求错误')
+      ElMessage.error(res.message || '请求错误')
       return Promise.reject(res)
     }
+
     return res
   },
   (error) => {

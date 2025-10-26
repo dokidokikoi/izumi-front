@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import type { UploadInstance, UploadRawFile } from 'element-plus'
 import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
-import { Clock, FolderOpened, Guide, Monitor, OfficeBuilding, Plus } from '@element-plus/icons-vue'
+import { Clock, Compass, FolderOpened, Guide, Monitor, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 import { genFileId } from 'element-plus'
 import { brandApi, categoryApi, gameApi, personApi, seriesApi, tagApi } from '~/apis/game'
+import { genderEnum, languageEnum, platformEnum, roleEnum, workEnum } from '~/config/enum'
+import { iconMap } from '~/config/icon'
 
 import { imageUrl } from '~/utils/image'
 
+const { t } = useI18n()
+
 // 模拟接口数据，实际应从 API 获取
+const router = useRouter()
 const route = useRoute()
 const gameId = computed(() => (route.params as { id: number }).id)
 
@@ -15,10 +20,15 @@ const game = ref<Partial<Game>>({})
 const gameIns = ref<GameInstance[]>([])
 const editGame = ref<Partial<Game>>({})
 const editGameIns = ref<GameInstance[]>([])
+const createGameIns = ref<Partial<GameInstance>>({
+  game_id: Number(gameId.value),
+})
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
 const brands = ref<Brand[]>([])
+const languages = ref<string[]>([])
+const platforms = ref<string[]>([])
 
 const gameStore = useGameStore()
 
@@ -39,10 +49,29 @@ function getGame() {
 
 function getIns() {
   gameApi.getIns(gameId.value).then((res) => {
-    gameIns.value = res.data.list
-    editGameIns.value = JSON.parse(JSON.stringify(res.data.list))
+    gameIns.value = res.data
+    editGameIns.value = JSON.parse(JSON.stringify(res.data))
+
+    platforms.value = []
+    languages.value = []
+    for (const ins of res.data) {
+      for (const plat of ins.platform) {
+        if (!platforms.value.find(p => p === plat)) {
+          platforms.value.push(plat)
+        }
+      }
+      for (const lang of ins.language) {
+        if (!languages.value.find(l => l === lang)) {
+          languages.value.push(lang)
+        }
+      }
+    }
   })
 }
+
+const gameInsIdx = ref<number>(0)
+const editGameInsIdx = ref<number>(0)
+const showAddGameIns = ref(false)
 
 // 初始化
 function getCategories() {
@@ -76,17 +105,20 @@ onMounted(() => {
 })
 
 // tabs
-const tabs = ['故事', '角色', '图片集', '参与成员', '相关链接']
+const tabs = ['故事', '角色', '图片集', '参与成员', '相关链接', '其他信息']
 const activeTab = ref('故事')
 
 // 监听 showEdit，执行游戏更新
 const showUpdate = ref(false)
-function updateGame() {
+async function updateGame() {
+  for (const ins of editGameIns.value) {
+    await gameApi.updateGameIns(ins)
+  }
+  getIns()
   gameApi.update(editGame.value).then(() => {
     showUpdate.value = false
     game.value = editGame.value
     getGame()
-    getIns()
   })
 }
 watch(
@@ -97,6 +129,14 @@ watch(
     }
   },
 )
+
+function addGameIns() {
+  gameApi.createGameIns(createGameIns.value).then(() => {
+    createGameIns.value = {}
+    getIns()
+    showAddGameIns.value = false
+  })
+}
 
 // 别名
 const showAddAlias = ref(false)
@@ -530,7 +570,11 @@ function rmImage(image: string) {
               <span class="font-semibold">别名：</span>
             </div>
             <div flex-1>
-              <span v-if="!gameStore.showEdit" text-lg>{{ game?.alias?.join(', ') }}</span>
+              <template v-if="!gameStore.showEdit">
+                <div v-for="alias in game?.alias" :key="alias">
+                  <span text-lg underline>{{ alias }}</span>
+                </div>
+              </template>
               <div v-else flex items-center>
                 <template v-for="(alias, index) in editGame.alias" :key="index">
                   <p
@@ -563,12 +607,15 @@ function rmImage(image: string) {
                   <OfficeBuilding color-blue />
                 </el-icon>
               </div>
-              <span class="font-semibold">厂商：</span>
+              <span class="font-semibold">品牌：</span>
             </div>
             <div flex-1>
-              <span v-if="!gameStore.showEdit" text-lg>{{ game?.brand?.name }}</span>
+              <span
+                v-if="!gameStore.showEdit" cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
+                @click="router.push(`/game?brand=${game?.brand?.id}`)"
+              >{{ game?.brand?.name }}</span>
               <div v-else flex flex-1 flex-wrap items-center>
-                <el-select v-model="createBrandID" placeholder="游戏发行商" :empty-values="[null, undefined, 0]" mr-2 w-64>
+                <el-select v-model="createBrandID" placeholder="游戏品牌" :empty-values="[null, undefined, 0]" mr-2 w-64>
                   <el-option
                     v-for="brand in brands" :key="brand.id"
                     :value="brand.id"
@@ -580,10 +627,42 @@ function rmImage(image: string) {
                   v-model="createBrand"
                   type="text"
                   class="mt-0 flex-1 border rounded p-1"
-                  placeholder="输入游戏发行商"
+                  placeholder="输入游戏品牌"
                   @keydown.enter="() => { appendBrand(createBrand); showAddBrand = false; createBrand = '' }"
                 >
                 <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddBrand = true">
+                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div flex items-center>
+            <div w-30 flex items-center>
+              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                <el-icon :size="20">
+                  <Compass color-blue />
+                </el-icon>
+              </div>
+              <span class="font-semibold">版本</span>
+            </div>
+            <div flex-1>
+              <el-select v-if="!gameStore.showEdit" v-model="gameInsIdx" placeholder="版本" :empty-values="[null, undefined, 0]" class="mr-2 w64" clearable>
+                <el-option
+                  v-for="(ins, idx) in gameIns" :key="ins.id"
+                  :value="idx + 1"
+                  :label="ins.version"
+                />
+              </el-select>
+              <div v-else flex flex-1 flex-wrap items-center>
+                <el-input v-if="editGameInsIdx" v-model="editGameIns[editGameInsIdx - 1].version" class="mr-2 w-64" />
+                <el-select v-model="editGameInsIdx" placeholder="版本" :empty-values="[null, undefined, 0]" class="mr-2 w64" clearable>
+                  <el-option
+                    v-for="(ins, idx) in editGameIns" :key="ins.id"
+                    :value="idx + 1"
+                    :label="ins.version"
+                  />
+                </el-select>
+                <button class="flex items-center rounded-full bg-green-500 p1" @click="showAddGameIns = true">
                   <div i="carbon-add-large" class="z-20 h-4 w-4" />
                 </button>
               </div>
@@ -599,7 +678,10 @@ function rmImage(image: string) {
               <span class="font-semibold">分类：</span>
             </div>
             <div flex-1>
-              <span v-if="!gameStore.showEdit" text-lg>{{ game?.category?.name }}</span>
+              <span
+                v-if="!gameStore.showEdit" cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
+                @click="router.push(`/game?category=${game?.category?.id}`)"
+              >{{ game?.category?.name }}</span>
               <div v-else flex flex-1 flex-wrap items-center>
                 <el-select v-model="createCategoryID" placeholder="游戏分类" :empty-values="[null, undefined, 0]" class="mr-2 w64">
                   <el-option
@@ -633,7 +715,10 @@ function rmImage(image: string) {
             </div>
             <div flex-1>
               <template v-if="!gameStore.showEdit">
-                <p v-for="s in game.series" :key="s.id" text-lg>
+                <p
+                  v-for="s in game.series" :key="s.id" cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
+                  @click="router.push(`/game?series=${s.id}`)"
+                >
                   {{ s.name }}
                 </p>
               </template>
@@ -680,7 +765,8 @@ function rmImage(image: string) {
               <template v-if="!gameStore.showEdit">
                 <span
                   v-for="tag in game.tags" :key="tag.id"
-                  class="mb-1 mr-1 inline-block cursor-pointer whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white"
+                  class="mb-1 mr-1 inline-block cursor-pointer whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white hover:border-blue-500 hover:text-blue-500"
+                  @click="router.push(`/game?tags=${tag.name}`)"
                 >
                   {{ tag.name }}
                 </span>
@@ -717,6 +803,7 @@ function rmImage(image: string) {
               </div>
             </div>
           </div>
+          <!-- 平台 -->
           <div flex items-center>
             <div w-30 flex items-center>
               <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
@@ -727,9 +814,47 @@ function rmImage(image: string) {
               <span class="font-semibold">平台: </span>
             </div>
             <div flex-1>
-              <span />
+              <template v-if="!gameStore.showEdit">
+                <template v-if="gameInsIdx">
+                  <div
+                    v-for="plat in gameIns[gameInsIdx - 1].platform" :key="plat"
+                    :class="iconMap[plat]"
+                    class="z-20 mr-2 h-6 w-6"
+                    inline-block
+                  />
+                </template>
+                <template v-else>
+                  <div
+                    v-for="plat in platforms" :key="plat"
+                    :class="iconMap[plat]"
+                    class="z-20 mr-2 h-6 w-6"
+                    inline-block
+                  />
+                </template>
+              </template>
+              <template v-else>
+                <template v-if="!editGameInsIdx">
+                  <div
+                    v-for="plat in platforms" :key="plat"
+                    :class="iconMap[plat]"
+                    class="z-20 mr-2 h-6 w-6"
+                    inline-block
+                  />
+                </template>
+                <template v-else>
+                  <el-select v-model="editGameIns[editGameInsIdx - 1].platform" multiple placeholder="游戏平台" clearable style="width: 300px">
+                    <el-option
+                      v-for="(v, k) in platformEnum" :key="k"
+                      :value="k"
+                    >
+                      <div :class="v" />
+                    </el-option>
+                  </el-select>
+                </template>
+              </template>
             </div>
           </div>
+          <!-- 游戏语言 -->
           <div flex items-center>
             <div w-30 flex items-center>
               <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
@@ -738,7 +863,43 @@ function rmImage(image: string) {
               <span class="font-semibold">语言: </span>
             </div>
             <div flex-1>
-              <span />
+              <template v-if="!gameStore.showEdit">
+                <template v-if="gameInsIdx">
+                  <span
+                    v-for="lang in gameIns[gameInsIdx - 1].language" :key="lang"
+                    mr-2
+                  >
+                    {{ t(lang) }}
+                  </span>
+                </template>
+                <template v-else>
+                  <span
+                    v-for="lang in languages" :key="lang"
+                    mr-2
+                  >
+                    {{ t(lang) }}
+                  </span>
+                </template>
+              </template>
+              <template v-else>
+                <template v-if="!editGameInsIdx">
+                  <span
+                    v-for="lang in languages" :key="lang"
+                    mr-2
+                  >
+                    {{ t(lang) }}
+                  </span>
+                </template>
+                <template v-else>
+                  <el-select v-model="editGameIns[editGameInsIdx - 1].language" multiple placeholder="游戏语言" clearable style="width: 300px">
+                    <el-option
+                      v-for="(v, k) in languageEnum" :key="k"
+                      :label="v"
+                      :value="k"
+                    />
+                  </el-select>
+                </template>
+              </template>
             </div>
           </div>
           <div flex items-center>
@@ -761,8 +922,70 @@ function rmImage(image: string) {
               />
             </div>
           </div>
+          <!-- 游戏路径 -->
+          <div v-if="gameInsIdx && !gameStore.showEdit" flex items-center>
+            <div w-30 flex items-center>
+              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                <el-icon :size="20">
+                  <Clock color-blue />
+                </el-icon>
+              </div>
+              <span class="font-semibold">游戏路径：</span>
+            </div>
+            <div flex-1>
+              <span>{{ gameIns[gameInsIdx - 1].path }}</span>
+            </div>
+          </div>
+          <div v-if="gameStore.showEdit && editGameInsIdx" flex items-center>
+            <div w-30 flex items-center>
+              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                <el-icon :size="20">
+                  <Clock color-blue />
+                </el-icon>
+              </div>
+              <span class="font-semibold">游戏路径：</span>
+            </div>
+            <div flex-1>
+              <el-input
+                v-model="editGameIns[editGameInsIdx - 1].path"
+                placeholder="game path"
+              />
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- 备注 -->
+      <template v-if="!gameStore.showEdit">
+        <div v-if="gameInsIdx" class="mt-8">
+          <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+            <h2 mb-2 font-700>
+              备注
+            </h2>
+            <hr mb-1>
+            <div flex items-center>
+              <p class="leading-relaxed" v-html="gameIns[gameInsIdx - 1]?.comment" />
+            </div>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <div v-if="editGameInsIdx" class="mt-8">
+          <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+            <h2 mb-2 font-700>
+              备注
+            </h2>
+            <hr mb-1>
+            <div flex items-center>
+              <el-input
+                v-model="editGameIns[editGameInsIdx - 1].comment"
+                type="textarea"
+                autosize
+              />
+            </div>
+          </div>
+        </div>
+      </template>
 
       <!-- Tabs -->
       <div class="mt-8">
@@ -926,30 +1149,16 @@ function rmImage(image: string) {
                       <div flex>
                         <el-select v-model="editGame.characters[idx].gender" placeholder="性别" style="width: 120px" mr-4>
                           <el-option
-                            label="男"
-                            value="male"
-                          />
-                          <el-option
-                            label="女"
-                            value="female"
-                          />
-                          <el-option
-                            label="扶她"
-                            value="futa"
+                            v-for="(v, k) in genderEnum" :key="k"
+                            :label="v"
+                            :value="k"
                           />
                         </el-select>
                         <el-select v-model="editGame.characters[idx].relation" placeholder="角色" style="width: 120px">
                           <el-option
-                            label="主角"
-                            value="main"
-                          />
-                          <el-option
-                            label="配角"
-                            value="minor"
-                          />
-                          <el-option
-                            label="路人"
-                            value="mob"
+                            v-for="(v, k) in roleEnum" :key="k"
+                            :label="v"
+                            :value="k"
                           />
                         </el-select>
                       </div>
@@ -1108,36 +1317,18 @@ function rmImage(image: string) {
                       <div mb-2>
                         <el-select v-model="editGame.staff[idx].gender" placeholder="性别" style="width: 240px">
                           <el-option
-                            label="男"
-                            value="male"
-                          />
-                          <el-option
-                            label="女"
-                            value="female"
-                          />
-                          <el-option
-                            label="扶她"
-                            value="futa"
+                            v-for="(v, k) in genderEnum" :key="k"
+                            :label="v"
+                            :value="k"
                           />
                         </el-select>
                       </div>
                       <div>
                         <el-select v-model="editGame.staff[idx].relation" multiple placeholder="分工" style="width: 240px">
                           <el-option
-                            label="剧本"
-                            value="writer"
-                          />
-                          <el-option
-                            label="原画"
-                            value="painter"
-                          />
-                          <el-option
-                            label="声优"
-                            value="cv"
-                          />
-                          <el-option
-                            label="音乐"
-                            value="music"
+                            v-for="(v, k) in workEnum" :key="k"
+                            :label="v"
+                            :value="k"
                           />
                         </el-select>
                       </div>
@@ -1170,6 +1361,7 @@ function rmImage(image: string) {
             </template>
           </div>
 
+          <!-- 相关链接 -->
           <div v-else-if="activeTab === '相关链接'">
             <template v-if="!gameStore.showEdit">
               <p v-for="link in game.links" :key="link.url" mb-2>
@@ -1207,6 +1399,19 @@ function rmImage(image: string) {
               </div>
             </template>
           </div>
+
+          <!-- 其他信息 -->
+          <div v-else-if="activeTab === '其他信息'">
+            <div class="flex items-center rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+              <p v-if="!gameStore.showEdit" class="leading-relaxed" v-html="game?.other_info" />
+              <el-input
+                v-else
+                v-model="editGame.other_info"
+                type="textarea"
+                autosize
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1224,6 +1429,96 @@ function rmImage(image: string) {
           Cancel
         </el-button>
         <el-button type="primary" @click="updateGame">
+          Confirm
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
+
+  <el-dialog
+    v-model="showAddGameIns"
+    title="游戏实体信息"
+  >
+    <el-row :gutter="4" mb-2>
+      <el-col :span="4">
+        <div h-full flex items-center>
+          <label class="mr-4 w22 text-center text-right font-medium">游戏路径</label>
+        </div>
+      </el-col>
+      <el-col :span="20">
+        <input v-model="createGameIns.path" type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏路径">
+      </el-col>
+    </el-row>
+    <el-row :gutter="4" mb-2>
+      <el-col :span="4">
+        <div h-full flex items-center>
+          <label class="mr-4 w22 text-center text-right font-medium">游戏版本</label>
+        </div>
+      </el-col>
+      <el-col :span="20">
+        <input v-model="createGameIns.version" type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏版本">
+      </el-col>
+    </el-row>
+    <el-row :gutter="4" mb-2>
+      <el-col :span="4">
+        <div h-full flex items-center>
+          <label class="mr-4 w22 text-center text-right font-medium">游戏语言</label>
+        </div>
+      </el-col>
+      <el-col :span="20">
+        <div flex items-start>
+          <el-select v-model="createGameIns.language" multiple placeholder="游戏语言" clearable style="width: 300px">
+            <el-option
+              v-for="(v, k) in languageEnum" :key="k"
+              :label="v"
+              :value="k"
+            />
+          </el-select>
+        </div>
+      </el-col>
+    </el-row>
+    <el-row :gutter="4" mb-2>
+      <el-col :span="4">
+        <div h-full flex items-center>
+          <label class="mr-4 w22 text-center text-right font-medium">游戏平台</label>
+        </div>
+      </el-col>
+      <el-col :span="20">
+        <div flex items-start>
+          <el-select v-model="createGameIns.platform" multiple placeholder="游戏平台" clearable style="width: 300px">
+            <el-option
+              v-for="(v, k) in platformEnum" :key="k"
+              :value="k"
+            >
+              <div :class="v" />
+            </el-option>
+          </el-select>
+        </div>
+      </el-col>
+    </el-row>
+    <el-row :gutter="4" mb-2>
+      <el-col :span="4">
+        <div h-full flex items-center>
+          <label class="mr-4 w22 text-center text-right font-medium">实体描述</label>
+        </div>
+      </el-col>
+      <el-col :span="20">
+        <textarea
+          v-model="createGameIns.comment"
+          type="textarea"
+          rows="2"
+          class="w-full flex-1 border rounded p-2"
+          placeholder="描述"
+        />
+      </el-col>
+    </el-row>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="showAddGameIns = false">
+          Cancel
+        </el-button>
+        <el-button type="primary" @click="addGameIns">
           Confirm
         </el-button>
       </div>

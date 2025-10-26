@@ -3,6 +3,7 @@ import type {
   CharacterSearchReq,
   CreateGameRequest,
   Game,
+  GameInstance,
   GameListReq,
   GameListResponse,
   PersonSearchReq,
@@ -37,6 +38,12 @@ export const gameApi = {
   },
   downloadAll() {
     return request.post(`/game/download/all`)
+  },
+  createGameIns(data: Partial<GameInstance>) {
+    return request.post('/game/ins', data)
+  },
+  updateGameIns(data: Partial<GameInstance>) {
+    return request.patch(`/game/ins`, data)
   },
 }
 

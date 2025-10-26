@@ -4,6 +4,7 @@ import { brandApi, categoryApi, gameApi, seriesApi, tagApi } from '~/apis/game'
 import { useGameStore } from '~/stores/gameStore'
 
 const router = useRouter()
+const route = useRoute()
 const gameStore = useGameStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 
@@ -18,6 +19,29 @@ const filters = ref<Partial<GameListReq>>({
   page_size: 20,
   order_by: 'id desc',
 })
+
+const tagsParam = route.query.tags
+if (Array.isArray(tagsParam)) {
+  filters.value.tags = tagsParam as string[]
+}
+else if (typeof tagsParam === 'string') {
+  filters.value.tags = [tagsParam]
+}
+if (route.query.series) {
+  filters.value.series = Number(route.query.series)
+}
+if (route.query.category) {
+  filters.value.category = Number(route.query.category)
+}
+if (route.query.character) {
+  filters.value.character = Number(route.query.character)
+}
+if (route.query.staff) {
+  filters.value.staff = Number(route.query.staff)
+}
+if (route.query.brand) {
+  filters.value.brand = Number(route.query.brand)
+}
 
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
@@ -54,10 +78,10 @@ onMounted(() => {
 })
 
 // 搜索方法（可以替换成 API 调用）
-function searchGames(query: string, append: boolean = false) {
+function searchGames(query: string, sortBy: string = 'id desc', append: boolean = false) {
   loading.value = true
   filters.value.keyword = query
-  filters.value.order_by = gameStore.sortBy
+  filters.value.order_by = sortBy
   if (append) {
     if (!filters.value.page) {
       filters.value.page = 0
@@ -88,7 +112,7 @@ watch(
   () => gameStore.searchTrigger,
   (newVal) => {
     if (newVal) {
-      searchGames(gameStore.searchQuery)
+      searchGames(gameStore.searchQuery, gameStore.sortBy)
     }
   },
 )
@@ -98,7 +122,7 @@ function initObserver() {
   const observer = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting) {
-        searchGames(gameStore.searchQuery, true)
+        searchGames(gameStore.searchQuery, filters.value.order_by, true)
       }
     },
     { rootMargin: '100px' }, // 提前100px触发加载
@@ -146,7 +170,7 @@ function go(id: number) {
         <el-col :span="8">
           <div class="flex items-center">
             <span class="w-20 font-medium">标签: </span>
-            <el-select v-model="filters.tags" multiple clearable w-80>
+            <el-select v-model="filters.tags" clearable multiple w-80>
               <el-option v-for="tag in tags" :key="tag.id" :value="tag.name" :label="tag.name" />
             </el-select>
           </div>
