@@ -33,6 +33,7 @@ const showScraper = computed(() => route.name === '/scrap/')
 const showEdit = computed(() => route.name === '/game/[id]')
 const showUpdateSetting = computed(() => route.name === '/policy')
 const showLogo = computed(() => route.name !== '/')
+const showLibrary = computed(() => route.name === '/library')
 
 // 搜索框内容
 const searchQuery = ref('')
@@ -148,6 +149,16 @@ function downloadGameInfo() {
         <button icon-btn class="flex items-center" title="提交" @click="gameStore.showUpdateSetting = !gameStore.showUpdateSetting">
           <div i="carbon-cloud-upload" class="z-20 mr-4 h-6 w-6" />
         </button>
+      </template>
+
+      <template v-if="showLibrary">
+        <el-tooltip
+          effect="light"
+          content="仅显示未刮削"
+          placement="bottom-start"
+        >
+          <el-switch v-model="gameStore.libraryNoScrap" style="--el-switch-off-color: gray" />
+        </el-tooltip>
       </template>
 
       <!-- 语言切换 -->

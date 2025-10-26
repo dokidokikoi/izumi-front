@@ -61,8 +61,21 @@ onMounted(() => {
 
 async function copyText(text: string) {
   try {
-    await navigator.clipboard.writeText(text)
-    ElMessage.success('复制成功')
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      ElMessage.success('复制成功')
+    }
+    else {
+      // 兼容性处理
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      textArea.remove()
+      ElMessage.success('复制成功')
+    }
   }
   catch (err) {
     console.error('复制失败:', err)

@@ -11,6 +11,7 @@ export const useGameStore = defineStore('game', () => {
   const scrapResults = ref<string[]>([])
   const showEdit = ref(false)
   const showUpdateSetting = ref(false)
+  const libraryNoScrap = ref(false)
 
   function setSearchQuery(query: string) {
     searchQuery.value = query
@@ -35,6 +36,7 @@ export const useGameStore = defineStore('game', () => {
     scrapResults,
     showEdit,
     showUpdateSetting,
+    libraryNoScrap,
     setSearchQuery,
     triggerSearch,
     setSort,

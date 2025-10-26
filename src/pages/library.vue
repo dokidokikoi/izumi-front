@@ -7,6 +7,7 @@ import { libraryApi, policyApi } from '~/apis/game'
 defineOptions({
   name: 'IndexPage',
 })
+const gameStore = useGameStore()
 const library = ref('/')
 const libraries = ref<PathInfo[]>([])
 const items = ref(new Map<string, PathInfo[]>())
@@ -16,7 +17,7 @@ function handleChange(val: CollapseModelValue) {
 }
 
 function list(path: string) {
-  libraryApi.ls(path).then((res) => {
+  libraryApi.ls(path, gameStore.libraryNoScrap).then((res) => {
     libraries.value = res.data.list
     libraries.value = libraries.value.filter((e) => {
       return e.is_dir
@@ -26,7 +27,7 @@ function list(path: string) {
 
 function getItem(path: string) {
   if (!items.value.get(path)) {
-    libraryApi.ls(path).then((res) => {
+    libraryApi.ls(path, false).then((res) => {
       items.value.set(path, res.data.list)
     })
   }
@@ -47,6 +48,13 @@ onMounted(() => {
     list(library.value)
   })
 })
+
+watch(
+  () => gameStore.libraryNoScrap,
+  () => {
+    list(library.value)
+  },
+)
 </script>
 
 <template>

@@ -159,8 +159,8 @@ export const personApi = {
 }
 
 export const libraryApi = {
-  ls(path: string) {
-    return request.get(`/library?path=${path}`)
+  ls(path: string, onlyNoScrap: boolean) {
+    return request.get(`/library?path=${path}&only_no_scrap=${onlyNoScrap}`)
   },
 }
 
