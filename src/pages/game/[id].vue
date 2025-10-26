@@ -55,14 +55,18 @@ function getIns() {
     platforms.value = []
     languages.value = []
     for (const ins of res.data) {
-      for (const plat of ins.platform) {
-        if (!platforms.value.find(p => p === plat)) {
-          platforms.value.push(plat)
+      if (ins.platform) {
+        for (const plat of ins.platform) {
+          if (!platforms.value.find(p => p === plat)) {
+            platforms.value.push(plat)
+          }
         }
       }
-      for (const lang of ins.language) {
-        if (!languages.value.find(l => l === lang)) {
-          languages.value.push(lang)
+      if (ins.language) {
+        for (const lang of ins.language) {
+          if (!languages.value.find(l => l === lang)) {
+            languages.value.push(lang)
+          }
         }
       }
     }
@@ -842,7 +846,7 @@ function rmImage(image: string) {
                   />
                 </template>
                 <template v-else>
-                  <el-select v-model="editGameIns[editGameInsIdx - 1].platform" multiple placeholder="游戏平台" clearable style="width: 300px">
+                  <el-select v-model="editGameIns[editGameInsIdx - 1].platform" placeholder="游戏平台" clearable multiple style="width: 300px">
                     <el-option
                       v-for="(v, k) in platformEnum" :key="k"
                       :value="k"
