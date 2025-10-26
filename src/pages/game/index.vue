@@ -217,7 +217,18 @@ function go(id: number) {
   <div
     class="grid grid-cols-1 gap-6 p-4 2xl:grid-cols-7 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5"
   >
-    <GameCard v-for="game in games" :key="game.id" :game="game" @click="go(game.id)" />
+    <el-tooltip
+      v-for="game in games" :key="game.id"
+      effect="light"
+      placement="right-end"
+    >
+      <template #content>
+        <p style="word-break: normal; white-space: pre-wrap; word-wrap: break-word;">
+          {{ game.name }}
+        </p>
+      </template>
+      <GameCard :game="game" @click="go(game.id)" />
+    </el-tooltip>
   </div>
 
   <!-- 加载提示 -->

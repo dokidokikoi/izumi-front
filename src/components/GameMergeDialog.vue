@@ -97,6 +97,9 @@ function removeImage(image: string) {
 const showAddAlias = ref(false)
 const createAlias = ref('')
 function appendAlias() {
+  if (!createGame.value.alias) {
+    createGame.value.alias = []
+  }
   createGame.value.alias?.push(createAlias.value)
   createAlias.value = ''
   showAddAlias.value = false

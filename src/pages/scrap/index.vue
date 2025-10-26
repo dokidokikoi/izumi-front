@@ -28,6 +28,7 @@ const scrapers = ref([
 
 const games = ref<ScraperGetRespItem[]>([])
 const scrapGames = ref(new Map<string, ScraperGetRespItem[]>())
+const gamePath = ref<string>('')
 
 const selectedGames = ref<ScraperGetRespItem[]>([])
 
@@ -38,6 +39,7 @@ function handleSearch() {
 }
 
 searchParam.value.keyword = route.query.keyword as string
+gamePath.value = route.query.path as string
 
 function toggleSelect(game: ScraperGetRespItem) {
   if (selectedGames.value.find(g => g.url === game.url)) {
@@ -140,13 +142,23 @@ onMounted(() => {
       <div
         class="grid grid auto-rows-max grid-cols-1 flex-1 gap-4 gap-6 overflow-y-auto p-4 p-4 2xl:grid-cols-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5"
       >
-        <GameCard
+        <el-tooltip
           v-for="g in games"
           :key="g.url"
-          :game="g"
-          class="cursor-pointer"
-          @click="toggleSelect(g)"
-        />
+          effect="light"
+          placement="right-end"
+        >
+          <template #content>
+            <p style="word-break: normal; white-space: pre-wrap; word-wrap: break-word;">
+              {{ g.name }}
+            </p>
+          </template>
+          <GameCard
+            :game="g"
+            class="cursor-pointer"
+            @click="toggleSelect(g)"
+          />
+        </el-tooltip>
       </div>
 
       <!-- 右侧已选择竖条，固定 -->
@@ -166,5 +178,5 @@ onMounted(() => {
     </div>
   </div>
 
-  <GameMergeDialog :visible="gameStore.showScraper" @close="gameStore.showScraper = false" />
+  <GameMergeDialog :visible="gameStore.showScraper" :game-path="gamePath" @close="gameStore.showScraper = false" />
 </template>
