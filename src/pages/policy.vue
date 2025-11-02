@@ -5,7 +5,7 @@ const gameStore = useGameStore()
 
 const policies = ref<Record<string, any>>({
   system: {
-    game_library: '',
+    game_library: [],
   },
 })
 const headers = ref<Record<string, any[]>>({})
@@ -26,6 +26,9 @@ function getProxy() {
           }
         }
       }
+    }
+    if (!policies.value.system.game_library || policies.value.system.game_library.length === 0) {
+      policies.value.system.game_library = ['']
     }
   })
 }
@@ -52,6 +55,10 @@ function rmHeader(scraperName: string, index: number) {
   headers.value[scraperName].splice(index, 1)
 }
 
+function addLibrary() {
+  policies.value.system.game_library.push('')
+}
+
 onMounted(() => {
   getProxy()
 })
@@ -65,7 +72,20 @@ onMounted(() => {
           game library
         </h2>
         <div>
-          <el-input v-model="policies.system.game_library" placeholder="game library path" />
+          <div
+            v-for="(_, idx) in policies.system.game_library"
+            :key="idx"
+            mb-2 flex items-center
+          >
+            <el-input
+              v-model="policies.system.game_library[idx]"
+              placeholder="game library path"
+              class="mr-4"
+            />
+            <button class="flex items-center rounded-full bg-green-500 p1" @click="addLibrary">
+              <div i="carbon-add-large" class="z-20 h-4 w-4" />
+            </button>
+          </div>
         </div>
       </Card>
     </el-col>

@@ -41,7 +41,7 @@ onMounted(() => {
   policyApi.get().then((res) => {
     for (const [k, v] of Object.entries(res.data)) {
       if (k === 'system') {
-        library.value = JSON.parse(v).game_library
+        gameStore.gameLibrary = JSON.parse(v).game_library
         break
       }
     }
@@ -52,6 +52,14 @@ onMounted(() => {
 watch(
   () => gameStore.libraryNoScrap,
   () => {
+    list(library.value)
+  },
+)
+
+watch(
+  () => gameStore.selectedGameLibrary,
+  () => {
+    library.value = gameStore.selectedGameLibrary
     list(library.value)
   },
 )
