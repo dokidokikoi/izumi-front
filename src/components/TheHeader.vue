@@ -152,6 +152,9 @@ function downloadGameInfo() {
       </template>
 
       <template v-if="showLibrary">
+        <el-select v-model="gameStore.selectedGameLibrary" placeholder="游戏库" class="mr-6 w64" clearable>
+          <el-option v-for="s in gameStore.gameLibrary" :key="s" :value="s" />
+        </el-select>
         <el-tooltip
           effect="light"
           content="仅显示未刮削"
