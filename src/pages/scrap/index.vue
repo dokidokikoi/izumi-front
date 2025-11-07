@@ -24,6 +24,7 @@ const scrapers = ref([
   { label: 'getchu', value: 'getchu' },
   { label: 'ggbases', value: 'ggbases' },
   { label: '2dfan', value: '2dfan' },
+  { label: 'vndb', value: 'vndb' },
 ])
 
 const games = ref<ScraperGetRespItem[]>([])

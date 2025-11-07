@@ -278,8 +278,10 @@ function appendBrand(d: string | undefined) {
     getBrands().then(() => {
       brands.value.forEach((d) => {
         if (d.id === res.data) {
-          createGame.value.brand = d
-          createBrandID.value = res.data
+          if (!createGame.value.brands) {
+            createGame.value.brands = [d]
+          }
+          createGame.value.brands.push(d)
         }
       })
     })
@@ -290,7 +292,18 @@ watch(
   () => createBrandID.value,
   (newVal) => {
     if (newVal) {
-      createGame.value.brand = brands.value.find(t => t.id === newVal)
+      if (!createGame.value.brands) {
+        createGame.value.brands = []
+      }
+      if (createGame.value.brands.find(b => b.id === newVal)) {
+        createBrandID.value = 0
+        return
+      }
+      const b = brands.value.find(b => b.id === newVal)
+      if (b) {
+        createGame.value.brands.push(b)
+        createBrandID.value = 0
+      }
     }
   },
 )
@@ -1016,6 +1029,16 @@ onMounted(() => {
           <div class="flex items-center">
             <label class="mr-4 w22 text-center text-right font-medium">发行商</label>
             <div flex flex-1 flex-wrap items-center>
+              <template v-for="(brand, index) in createGame.brands" :key="index">
+                <p
+                  class="mb-1 mr-2 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
+                >
+                  {{ brand.name }}
+                  <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="createGame.brands.splice(index, 1)">
+                    <div i="carbon-close" class="z-20 h-4 w-4" />
+                  </button>
+                </p>
+              </template>
               <el-select v-model="createBrandID" placeholder="游戏发行商" :empty-values="[null, undefined, 0]" style="width: 240px" mr-2>
                 <el-option
                   v-for="brand in brands" :key="brand.id"
@@ -1187,7 +1210,7 @@ onMounted(() => {
                           {{ character.name }}
                         </h1>
                         <div mb-2 flex flex-1 flex-wrap items-center>
-                          <template v-for="(alias, index) in character.alias" :key="index">
+                          <template v-for="(alias, idx) in character.alias" :key="idx">
                             <p
                               class="mb-1 mr-2 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
                             >
@@ -1208,7 +1231,7 @@ onMounted(() => {
                       </div>
                     </div>
                     <div flex>
-                      <el-image v-for="(image, index) in character.images" :key="index" fit="cover" :src="imageUrl(image)" class="h-20 w-20 object-cover" alt="" />
+                      <el-image v-for="(image, i) in character.images" :key="i" fit="cover" :src="imageUrl(image)" class="h-20 w-20 object-cover" alt="" />
                     </div>
                     <p mb-2 mt-2>
                       <span>CV：</span>

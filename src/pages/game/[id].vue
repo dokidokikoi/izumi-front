@@ -168,8 +168,10 @@ function appendBrand(d: string | undefined) {
     getBrands().then(() => {
       brands.value.forEach((d) => {
         if (d.id === res.data) {
-          editGame.value.brand = d
-          createBrandID.value = res.data
+          if (!editGame.value.brands) {
+            editGame.value.brands = [d]
+          }
+          editGame.value.brands.push(d)
         }
       })
     })
@@ -180,7 +182,18 @@ watch(
   () => createBrandID.value,
   (newVal) => {
     if (newVal) {
-      editGame.value.brand = brands.value.find(t => t.id === newVal)
+      if (!editGame.value.brands) {
+        editGame.value.brands = []
+      }
+      if (editGame.value.brands.find(b => b.id === newVal)) {
+        createBrandID.value = 0
+        return
+      }
+      const b = brands.value.find(b => b.id === newVal)
+      if (b) {
+        editGame.value.brands.push(b)
+        createBrandID.value = 0
+      }
     }
   },
 )
@@ -614,11 +627,25 @@ function rmImage(image: string) {
               <span class="font-semibold">品牌：</span>
             </div>
             <div flex-1>
-              <span
-                v-if="!gameStore.showEdit" cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
-                @click="router.push(`/game?brand=${game?.brand?.id}`)"
-              >{{ game?.brand?.name }}</span>
+              <div v-if="!gameStore.showEdit">
+                <span
+                  v-for="brand in game.brands"
+                  :key="brand.id"
+                  cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
+                  @click="router.push(`/game?brand=${brand.id}`)"
+                >{{ brand.name }}</span>
+              </div>
               <div v-else flex flex-1 flex-wrap items-center>
+                <template v-for="(brand, index) in editGame.brands" :key="index">
+                  <span
+                    class="mb-1 mr-1 inline-block flex cursor-pointer items-center whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white"
+                  >
+                    {{ brand.name }}
+                    <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="editGame.brands.splice(index, 1)">
+                      <div i="carbon-close" class="z-20 h-4 w-4" />
+                    </button>
+                  </span>
+                </template>
                 <el-select v-model="createBrandID" placeholder="游戏品牌" :empty-values="[null, undefined, 0]" mr-2 w-64>
                   <el-option
                     v-for="brand in brands" :key="brand.id"

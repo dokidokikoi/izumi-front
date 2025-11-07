@@ -85,7 +85,7 @@ export interface Game {
   images: string[]
   category: Category | null
   series: Series[]
-  brand: Brand | null
+  brands: Brand[] | null
   price: string
   issue_date: string // ISO 时间字符串，例如 "2025-08-25T12:34:56Z"
   story: string
