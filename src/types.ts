@@ -168,6 +168,11 @@ export interface ScraperDetailReq {
   request_id: string
   objs: ScraperDetailReqObj[]
 }
+export interface ScraperAutoReq {
+  objs: ScraperDetailReqObj[]
+  path: string
+  version: string
+}
 
 //
 export interface CharacterSearchReq {

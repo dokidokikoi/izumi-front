@@ -7,6 +7,7 @@ import type {
   GameListReq,
   GameListResponse,
   PersonSearchReq,
+  ScraperAutoReq,
   ScraperDetailReq,
   ScraperSearchReq,
   Staff,
@@ -56,6 +57,9 @@ export const scrapApi = {
   },
   get(rid: string) {
     return request.get(`/scraper`, { params: { request_id: rid } })
+  },
+  auto(data: ScraperAutoReq) {
+    return request.post('/scraper/auto', data)
   },
 }
 

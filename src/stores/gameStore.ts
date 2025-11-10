@@ -14,6 +14,7 @@ export const useGameStore = defineStore('game', () => {
   const libraryNoScrap = ref(false)
   const gameLibrary = ref<string[]>([])
   const selectedGameLibrary = ref<string>('')
+  const autoScraper = ref(false)
 
   function setSearchQuery(query: string) {
     searchQuery.value = query
@@ -41,6 +42,7 @@ export const useGameStore = defineStore('game', () => {
     libraryNoScrap,
     gameLibrary,
     selectedGameLibrary,
+    autoScraper,
     setSearchQuery,
     triggerSearch,
     setSort,

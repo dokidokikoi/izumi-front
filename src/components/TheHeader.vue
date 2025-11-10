@@ -130,6 +130,9 @@ function downloadGameInfo() {
         <button icon-btn class="flex items-center" title="刮削" @click="gameStore.showScraper = !gameStore.showScraper">
           <div i="carbon-download" class="z-20 mr-4 h-6 w-6" />
         </button>
+        <button icon-btn class="flex items-center" title="自动刮削" @click="gameStore.autoScraper = !gameStore.autoScraper">
+          <div i="carbon-checkmark" class="z-20 mr-4 h-6 w-6" />
+        </button>
       </template>
 
       <template v-if="showEdit">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  ScraperAutoReq,
   ScraperDetailReq,
   ScraperGetRespItem,
   ScraperSearchReq,
@@ -78,6 +79,29 @@ watch(
         })
       }
       scrapApi.scrap(scraperDetailReq.value)
+    }
+  },
+)
+
+// 监听 selectScrapResult，执行刮削
+const scraperAutoReq = ref<ScraperAutoReq>({
+  objs: [],
+  path: '',
+  version: 'v0',
+})
+watch(
+  () => gameStore.autoScraper,
+  (newVal) => {
+    if (newVal) {
+      scraperAutoReq.value.objs = []
+      scraperAutoReq.value.path = gamePath.value
+      for (const item of selectedGames.value) {
+        scraperAutoReq.value?.objs.push({
+          name: item.scraper_name,
+          url: item.url,
+        })
+      }
+      scrapApi.auto(scraperAutoReq.value)
     }
   },
 )
