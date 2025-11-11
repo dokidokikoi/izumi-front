@@ -647,14 +647,13 @@ onMounted(() => {
       const data = JSON.parse(event.data)
       rid.value = data.rid
       if (data.event === 'detail') {
-        if (data.message === 'success') {
+        if (data.success) {
           scrapApi.get(data.rid).then((res) => {
             scrapAllGames.value = res.data
           })
         }
         ElNotification({
-          title: 'Title',
-          message: data.message,
+          title: 'data.data.name',
           type: 'success',
           duration: 5000,
           position: 'bottom-right',

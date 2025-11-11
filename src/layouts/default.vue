@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ElNotification } from 'element-plus'
+import { useWebSocket } from '~/utils/websocket'
+
 const isSidebarOpen = ref(false) // 移动端
 const isCollapsed = ref(false) // 折叠状态
 
@@ -7,6 +10,21 @@ onMounted(() => {
   const saved = localStorage.getItem('sidebar-collapsed')
   if (saved !== null) {
     isCollapsed.value = saved === 'true'
+  }
+
+  const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_auto_scrap')
+  if (connection && connection.value) {
+    connection.value.onmessage = function (event) {
+      const data = JSON.parse(event.data)
+      if (data.event === 'autoscrap') {
+        ElNotification({
+          title: data.message,
+          type: data.success ? 'success' : 'error',
+          duration: 3000,
+          position: 'top-right',
+        })
+      }
+    }
   }
 })
 

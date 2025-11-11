@@ -205,6 +205,7 @@ export interface PersonSearchReq {
 export interface PathInfo {
   path: string
   is_dir: boolean
+  child: PathInfo[]
 }
 
 //

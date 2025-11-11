@@ -10,7 +10,6 @@ defineOptions({
 const gameStore = useGameStore()
 const library = ref('/')
 const libraries = ref<PathInfo[]>([])
-const items = ref(new Map<string, PathInfo[]>())
 const activeNames = ref('')
 function handleChange(val: CollapseModelValue) {
   console.warn(val)
@@ -23,14 +22,6 @@ function list(path: string) {
       return e.is_dir
     })
   })
-}
-
-function getItem(path: string) {
-  if (!items.value.get(path)) {
-    libraryApi.ls(path, false).then((res) => {
-      items.value.set(path, res.data.list)
-    })
-  }
 }
 
 function getName(path: string) {
@@ -68,7 +59,7 @@ watch(
 <template>
   <div class="demo-collapse">
     <el-collapse v-model="activeNames" accordion @change="handleChange">
-      <el-collapse-item v-for="item in libraries" :key="item.path" :title="item.path" :name="item.path" @click="getItem(item.path)">
+      <el-collapse-item v-for="item in libraries" :key="item.path" :title="item.path" :name="item.path">
         <template #title>
           <div flex items-center>
             <el-icon :size="20" ml-1 mr-2>
@@ -80,7 +71,7 @@ watch(
         </template>
         <div>
           <p
-            v-for="i in items.get(item.path)" :key="i.path"
+            v-for="i in item.child" :key="i.path"
             style="font-size: 16px;padding-left: 16px;"
             class="bg-#191919 text-left"
           >

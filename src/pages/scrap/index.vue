@@ -112,7 +112,7 @@ onMounted(() => {
     connection.value.onmessage = function (event) {
       const data = JSON.parse(event.data)
       if (data.event === 'search') {
-        if (data.message === 'success') {
+        if (data.success) {
           scrapApi.get(data.rid).then((res) => {
             scrapGames.value.clear()
             gameStore.scrapResults = []
@@ -123,9 +123,8 @@ onMounted(() => {
           })
         }
         ElNotification({
-          title: 'Title',
-          message: data.message,
-          type: 'success',
+          title: data.data.name,
+          type: data.success ? 'success' : 'error',
           duration: 5000,
           position: 'bottom-right',
         })

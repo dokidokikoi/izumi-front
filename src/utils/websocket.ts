@@ -14,24 +14,24 @@ export function useWebSocket(path: string, autoReconnect = true) {
 
     connection.value.onopen = (event) => {
       console.warn('[WebSocket] Connected:', event)
-      ElNotification({
-        title: 'WebSocket',
-        message: '成功连接到服务器',
-        type: 'success',
-        duration: 3000,
-        position: 'bottom-right',
-      })
+      // ElNotification({
+      //   title: 'WebSocket',
+      //   message: '成功连接到服务器',
+      //   type: 'success',
+      //   duration: 3000,
+      //   position: 'bottom-right',
+      // })
     }
 
     connection.value.onclose = (event) => {
       console.warn('[WebSocket] Closed:', event)
-      ElNotification({
-        title: 'WebSocket',
-        message: '连接已关闭',
-        type: 'error',
-        duration: 5000,
-        position: 'bottom-right',
-      })
+      // ElNotification({
+      //   title: 'WebSocket',
+      //   message: '连接已关闭',
+      //   type: 'error',
+      //   duration: 5000,
+      //   position: 'bottom-right',
+      // })
       if (autoReconnect) {
         console.warn('[WebSocket] Reconnecting in 3s...')
         setTimeout(connect, 3000)
