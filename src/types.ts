@@ -50,6 +50,18 @@ export interface Staff {
 }
 
 // 游戏角色
+export interface PersonalInfo {
+  blood_type: string
+  height: number
+  weight: number
+  bust: number
+  waist: number
+  hip: number
+  cup: string
+  age: number
+  birth_year: number
+  birthday: number[]
+}
 export interface Character {
   id: number
   name: string
@@ -63,6 +75,7 @@ export interface Character {
   cv: Staff | null
   games: Game[]
   weight: number
+  personal_info: Partial<PersonalInfo>
   created_at: string
   updated_at: string
 }

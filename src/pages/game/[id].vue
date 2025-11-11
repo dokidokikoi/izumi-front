@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UploadInstance, UploadRawFile } from 'element-plus'
 import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
-import { Clock, Compass, FolderOpened, Guide, Monitor, OfficeBuilding, Plus } from '@element-plus/icons-vue'
+import { Clock, Compass, Connection, Folder, FolderOpened, Guide, Monitor, OfficeBuilding, Plus } from '@element-plus/icons-vue'
 import { genFileId } from 'element-plus'
 import { brandApi, categoryApi, gameApi, personApi, seriesApi, tagApi } from '~/apis/game'
 import { genderEnum, languageEnum, platformEnum, roleEnum, workEnum } from '~/config/enum'
@@ -376,6 +376,7 @@ function addCharacter() {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     weight: 1,
+    personal_info: {},
   })
 }
 // function searchCharacter(keyword: string) {
@@ -592,7 +593,7 @@ function rmImage(image: string) {
                   <span text-lg underline>{{ alias }}</span>
                 </div>
               </template>
-              <div v-else flex items-center>
+              <div v-else flex flex-wrap items-center>
                 <template v-for="(alias, index) in editGame.alias" :key="index">
                   <p
                     class="mb-1 mr-2 mt-1 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
@@ -633,7 +634,7 @@ function rmImage(image: string) {
                   :key="brand.id"
                   cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
                   @click="router.push(`/game?brand=${brand.id}`)"
-                >{{ brand.name }}</span>
+                >{{ brand.name }} &nbsp;&nbsp;</span>
               </div>
               <div v-else flex flex-1 flex-wrap items-center>
                 <template v-for="(brand, index) in editGame.brands" :key="index">
@@ -735,11 +736,12 @@ function rmImage(image: string) {
               </div>
             </div>
           </div>
+          <!-- 游戏系列 -->
           <div flex items-center>
             <div w-30 flex items-center>
               <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
                 <el-icon :size="20">
-                  <FolderOpened color-blue />
+                  <Connection color-blue />
                 </el-icon>
               </div>
               <span class="font-semibold">系列：</span>
@@ -785,6 +787,7 @@ function rmImage(image: string) {
               </div>
             </div>
           </div>
+          <!-- 游戏标签 -->
           <div flex items-start>
             <div w-30 flex items-center>
               <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
@@ -794,13 +797,16 @@ function rmImage(image: string) {
             </div>
             <div flex-1>
               <template v-if="!gameStore.showEdit">
-                <span
-                  v-for="tag in game.tags" :key="tag.id"
-                  class="mb-1 mr-1 inline-block cursor-pointer whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white hover:border-blue-500 hover:text-blue-500"
-                  @click="router.push(`/game?tags=${tag.name}`)"
-                >
-                  {{ tag.name }}
-                </span>
+                <TagList :max-height="200" :tags="game.tags">
+                  <template #tag="{ tag }">
+                    <span
+                      class="mb-1 mr-1 inline-block cursor-pointer whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white hover:border-blue-500 hover:text-blue-500"
+                      @click="router.push(`/game?tags=${tag.name}`)"
+                    >
+                      {{ tag.name }}
+                    </span>
+                  </template>
+                </TagList>
               </template>
               <div v-else flex flex-1 flex-wrap items-center>
                 <template v-for="(tag, index) in editGame.tags" :key="index">
@@ -958,7 +964,7 @@ function rmImage(image: string) {
             <div w-30 flex items-center>
               <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
                 <el-icon :size="20">
-                  <Clock color-blue />
+                  <Folder color-blue />
                 </el-icon>
               </div>
               <span class="font-semibold">游戏路径：</span>
@@ -971,7 +977,7 @@ function rmImage(image: string) {
             <div w-30 flex items-center>
               <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
                 <el-icon :size="20">
-                  <Clock color-blue />
+                  <Folder color-blue />
                 </el-icon>
               </div>
               <span class="font-semibold">游戏路径：</span>
@@ -1073,9 +1079,50 @@ function rmImage(image: string) {
                     />
                   </el-col>
                   <el-col :span="18">
-                    <h3 class="mb-4 text-xl font-semibold">
-                      {{ character.name }}
-                    </h3>
+                    <div class="mb-4 flex items-end">
+                      <h3 class="mr-4 text-7 font-semibold">
+                        {{ character.name }}
+                      </h3>
+                      <div class="pb-1">
+                        CV: {{ character.cv?.name }}
+                      </div>
+                    </div>
+                    <div mb-4>
+                      <el-row :gutter="6" w-130>
+                        <el-col :span="6">
+                          年龄: {{ character.personal_info.age }}
+                        </el-col>
+                        <el-col :span="6">
+                          生日:
+                          <span v-show="character.personal_info.birth_year">{{ character.personal_info.birth_year }}-</span><span v-show="character.personal_info.birthday">{{ character.personal_info.birthday[0] }}-{{ character.personal_info.birthday[1] }}</span>
+                        </el-col>
+                      </el-row>
+                      <el-row :gutter="6" w-130>
+                        <el-col :span="6">
+                          血型: {{ character.personal_info.blood_type }}
+                        </el-col>
+                        <el-col :span="6">
+                          身高: {{ character.personal_info.height }}
+                        </el-col>
+                        <el-col :span="6">
+                          体重: {{ character.personal_info.weight }}
+                        </el-col>
+                      </el-row>
+                      <el-row :gutter="6" w-130>
+                        <el-col :span="6">
+                          胸围: {{ character.personal_info.bust }}
+                        </el-col>
+                        <el-col :span="6">
+                          腰围: {{ character.personal_info.waist }}
+                        </el-col>
+                        <el-col :span="6">
+                          臀围: {{ character.personal_info.hip }}
+                        </el-col>
+                        <el-col :span="6">
+                          cup: {{ character.personal_info.cup }}
+                        </el-col>
+                      </el-row>
+                    </div>
                     <p v-html="character.summary" />
                   </el-col>
                 </el-row>

@@ -16,7 +16,7 @@ defineProps<{
       <img
         :src="imageUrl(game.cover)"
         :alt="game.name"
-        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        class="h-full w-full object-cover transition-transform duration-300"
       >
     </div>
 
@@ -35,15 +35,30 @@ defineProps<{
       <h3 class="truncate text-lg font-semibold">
         {{ game.name }}
       </h3>
-      <p class="text-xs opacity-80">
-        发行公司: {{ game.brand?.name }}
-      </p>
-      <p class="text-xs opacity-80">
-        类型: {{ game.category?.name }}
-      </p>
-      <p class="text-xs opacity-80">
-        时间: {{ game.issue_date }}
-      </p>
+      <el-row justify="center" :gutter="8" class="text-left text-xs opacity-80">
+        <el-col :span="10" text-right>
+          品牌:
+        </el-col>
+        <el-col :span="12">
+          {{ game.brands?.length > 0 ? game.brands[0].name : "" }}
+        </el-col>
+      </el-row>
+      <el-row justify="center" :gutter="8" class="text-left text-xs opacity-80">
+        <el-col :span="10" text-right>
+          类型:
+        </el-col>
+        <el-col :span="12">
+          {{ game.category?.name }}
+        </el-col>
+      </el-row>
+      <el-row justify="center" :gutter="8" class="text-left text-xs opacity-80">
+        <el-col :span="10" text-right>
+          发布时间:
+        </el-col>
+        <el-col :span="12">
+          {{ game.issue_date?.slice(0, 10) }}
+        </el-col>
+      </el-row>
       <div class="mt-1 flex flex-wrap gap-1">
         <span
           v-for="tag in game.tags"

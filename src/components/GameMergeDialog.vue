@@ -364,6 +364,7 @@ function addCharacter() {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     weight: 0,
+    personal_info: {},
   })
 }
 function moveCharacter(idx: number | null) {
@@ -399,6 +400,7 @@ function moveCharacter(idx: number | null) {
         created_at: c.created_at,
         updated_at: c.updated_at,
         weight: c.weight,
+        personal_info: {},
       })
     })
   }
@@ -434,6 +436,7 @@ function moveCharacter(idx: number | null) {
       created_at: c.created_at,
       updated_at: c.updated_at,
       weight: 0,
+      personal_info: {},
     })
   }
 }
