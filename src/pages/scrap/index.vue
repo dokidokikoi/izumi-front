@@ -5,7 +5,7 @@ import type {
   ScraperGetRespItem,
   ScraperSearchReq,
 } from '~/types'
-import { ElNotification } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { scrapApi } from '~/apis/game'
 import { useGameStore } from '~/stores/gameStore'
 import { useWebSocket } from '~/utils/websocket'
@@ -14,7 +14,7 @@ const route = useRoute()
 const gameStore = useGameStore()
 const searchParam = ref<Partial<ScraperSearchReq>>({
   name: 'all',
-  keyword: '彼女',
+  keyword: '',
   page: 1,
 })
 const requestId = ref('')
@@ -101,7 +101,10 @@ watch(
           url: item.url,
         })
       }
-      scrapApi.auto(scraperAutoReq.value)
+      scrapApi.auto(scraperAutoReq.value).finally(() => {
+        gameStore.autoScraper = false
+        ElMessage.success('提交任务成功,请耐心等候')
+      })
     }
   },
 )

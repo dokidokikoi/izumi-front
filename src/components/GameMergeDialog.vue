@@ -656,7 +656,7 @@ onMounted(() => {
           })
         }
         ElNotification({
-          title: 'data.data.name',
+          title: data.data.name,
           type: 'success',
           duration: 5000,
           position: 'bottom-right',
