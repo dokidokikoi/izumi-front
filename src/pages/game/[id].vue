@@ -41,9 +41,6 @@ function getGame() {
     if (res.data.category) {
       createCategoryID.value = res.data.category.id
     }
-    if (res.data.brand) {
-      createBrandID.value = res.data.brand.id
-    }
   })
 }
 
