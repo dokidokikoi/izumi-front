@@ -36,7 +36,14 @@ onMounted(() => {
         break
       }
     }
-    list(library.value)
+    if (gameStore.gameLibrary.length > 0) {
+      if (gameStore.selectedGameLibrary !== gameStore.gameLibrary[0]) {
+        gameStore.selectedGameLibrary = gameStore.gameLibrary[0]
+      }
+      else {
+        list(library.value)
+      }
+    }
   })
 })
 
