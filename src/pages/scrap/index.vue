@@ -1,136 +1,149 @@
 <script setup lang="ts">
 import type {
   ScraperAutoReq,
-  ScraperDetailReq,
   ScraperGetRespItem,
   ScraperSearchReq,
 } from '~/types'
+import { Delete, Loading, MagicStick, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElNotification } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { scrapApi } from '~/apis/game'
-import { useGameStore } from '~/stores/gameStore'
 import { useWebSocket } from '~/utils/websocket'
 
+// 假设你有这些组件
+// import GameCard from '~/components/GameCard.vue'
+
 const route = useRoute()
-const gameStore = useGameStore()
+
+// --- 状态管理 ---
+const loading = ref(false)
 const searchParam = ref<Partial<ScraperSearchReq>>({
   name: 'all',
   keyword: '',
   page: 1,
 })
-const requestId = ref('')
-const scrapers = ref([
-  { label: 'all', value: 'all' },
-  { label: 'bangumi', value: 'bangumi' },
-  { label: 'dlsite', value: 'dlsite' },
-  { label: 'getchu', value: 'getchu' },
-  { label: 'ggbases', value: 'ggbases' },
-  { label: '2dfan', value: '2dfan' },
-  { label: 'vndb', value: 'vndb' },
-])
+const scrapers = [
+  { label: '全部源', value: 'all' },
+  { label: 'Bangumi', value: 'bangumi' },
+  { label: 'DLsite', value: 'dlsite' },
+  { label: 'Getchu', value: 'getchu' },
+  { label: 'GGBases', value: 'ggbases' },
+  { label: '2DFan', value: '2dfan' },
+  { label: 'VNDB', value: 'vndb' },
+]
 
-const games = ref<ScraperGetRespItem[]>([])
-const scrapGames = ref(new Map<string, ScraperGetRespItem[]>())
+// 搜索结果数据
+const scrapResultsMap = ref(new Map<string, ScraperGetRespItem[]>())
+const resultSources = ref<string[]>([]) // 存所有有结果的源 key
+const activeSource = ref('') // 当前选中的 Tab
+
+// 已选数据
+const selectedGames = ref<ScraperGetRespItem[]>([])
 const gamePath = ref<string>('')
 
-const selectedGames = ref<ScraperGetRespItem[]>([])
+// 计算当前显示的列表
+const currentDisplayGames = computed(() => {
+  if (!activeSource.value)
+    return []
+  return scrapResultsMap.value.get(activeSource.value) || []
+})
+
+// --- 核心逻辑 ---
 
 function handleSearch() {
-  scrapApi.search(searchParam.value).then((res) => {
-    requestId.value = res.data
-  })
+  if (!searchParam.value.keyword)
+    return
+
+  loading.value = true
+  // 清空旧数据
+  scrapResultsMap.value.clear()
+  resultSources.value = []
+  activeSource.value = ''
+  selectedGames.value = []
+
+  scrapApi.search(searchParam.value)
+    .then(() => {
+      // 仅发送了请求，等待 WebSocket 回调
+      ElMessage.info('搜索请求已发送，请等待结果...')
+    })
+    .catch(() => {
+      loading.value = false
+    })
 }
 
-searchParam.value.keyword = route.query.keyword as string
-gamePath.value = route.query.path as string
-
 function toggleSelect(game: ScraperGetRespItem) {
-  if (selectedGames.value.find(g => g.url === game.url)) {
-    selectedGames.value = selectedGames.value.filter(g => g.url !== game.url)
+  const index = selectedGames.value.findIndex(g => g.url === game.url)
+  if (index > -1) {
+    selectedGames.value.splice(index, 1)
   }
   else {
     selectedGames.value.push(game)
   }
 }
 
-// 监听 searchTrigger，执行搜索
-watch(
-  () => gameStore.selectScrapResult,
-  (newVal) => {
-    if (newVal) {
-      games.value = scrapGames.value.get(newVal) ?? []
-    }
-  },
-)
+function isSelected(game: ScraperGetRespItem) {
+  return selectedGames.value.some(g => g.url === game.url)
+}
 
-// 监听 selectScrapResult，执行刮削
-const scraperDetailReq = ref<ScraperDetailReq>({
-  request_id: '',
-  objs: [],
-})
-watch(
-  () => gameStore.showScraper,
-  (newVal) => {
-    if (newVal) {
-      scraperDetailReq.value.objs = []
-      for (const item of selectedGames.value) {
-        scraperDetailReq.value?.objs.push({
-          name: item.scraper_name,
-          url: item.url,
-        })
-      }
-      scrapApi.scrap(scraperDetailReq.value)
-    }
-  },
-)
+// 提交自动刮削
+function submitAutoScrape() {
+  if (selectedGames.value.length === 0)
+    return
 
-// 监听 selectScrapResult，执行刮削
-const scraperAutoReq = ref<ScraperAutoReq>({
-  objs: [],
-  path: '',
-  version: 'v0',
-})
-watch(
-  () => gameStore.autoScraper,
-  (newVal) => {
-    if (newVal) {
-      scraperAutoReq.value.objs = []
-      scraperAutoReq.value.path = gamePath.value
-      for (const item of selectedGames.value) {
-        scraperAutoReq.value?.objs.push({
-          name: item.scraper_name,
-          url: item.url,
-        })
-      }
-      scrapApi.auto(scraperAutoReq.value).finally(() => {
-        gameStore.autoScraper = false
-        ElMessage.success('提交任务成功,请耐心等候')
-      })
-    }
-  },
-)
+  const req: ScraperAutoReq = {
+    objs: selectedGames.value.map(g => ({ name: g.scraper_name, url: g.url })),
+    path: gamePath.value,
+    version: 'v0',
+  }
+
+  scrapApi.auto(req).then(() => {
+    ElMessage.success('刮削任务已提交，请耐心等待后台处理')
+    // 可以在这里跳转回首页或清空选择
+    selectedGames.value = []
+  })
+}
+
+// --- 初始化 & WebSocket ---
 
 onMounted(() => {
+  searchParam.value.keyword = route.query.keyword as string
+  gamePath.value = route.query.path as string
+
+  if (searchParam.value.keyword) {
+    handleSearch()
+  }
+
   const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_search')
   if (connection && connection.value) {
     connection.value.onmessage = function (event) {
       const data = JSON.parse(event.data)
+
+      // 收到搜索完成通知
       if (data.event === 'search') {
+        loading.value = false
         if (data.success) {
+          // 获取具体结果详情
           scrapApi.get(data.rid).then((res) => {
-            scrapGames.value.clear()
-            gameStore.scrapResults = []
-            for (const item in res.data) {
-              gameStore.scrapResults.push(item)
-              scrapGames.value.set(item, res.data[item])
+            // 整理数据
+            for (const sourceKey in res.data) {
+              const list = res.data[sourceKey]
+              if (list && list.length > 0) {
+                scrapResultsMap.value.set(sourceKey, list)
+                if (!resultSources.value.includes(sourceKey)) {
+                  resultSources.value.push(sourceKey)
+                }
+              }
+            }
+            // 如果当前没有选中 Tab，默认选第一个有数据的
+            if (!activeSource.value && resultSources.value.length > 0) {
+              activeSource.value = resultSources.value[0]
             }
           })
         }
-        ElNotification({
-          title: data.data.name,
-          type: data.success ? 'success' : 'error',
-          duration: 5000,
-          position: 'bottom-right',
-        })
+        else {
+          ElNotification.error({ title: '搜索失败', message: data.data?.name || '未知错误' })
+        }
       }
     }
   }
@@ -138,72 +151,171 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col" style="height: calc(100vh - 112px);">
-    <!-- 顶部搜索栏 -->
-    <div class="flex items-center gap-4 border-b px-4 pb-4">
-      <el-input
-        v-model="searchParam.keyword"
-        type="text"
-        placeholder="输入游戏名称..."
-        class="flex-1"
-      />
-      <el-input
-        v-model.number="searchParam.page"
-        type="text"
-        placeholder="分页"
-        class="w16"
-      />
-      <el-select v-model="searchParam.name" class="w32">
-        <el-option v-for="s in scrapers" :key="s.value" :value="s.value" :label="s.label" />
-      </el-select>
-      <button
-        class="rounded bg-blue-500 px-4 py-1 text-3.6 text-white transition"
-        @click="handleSearch"
-      >
-        搜索
-      </button>
-    </div>
+  <div class="h-[calc(100vh-64px)] flex flex-col bg-gray-50 dark:bg-gray-900">
+    <!-- 1. 顶部搜索栏 -->
+    <div class="z-10 border-b border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="mx-auto max-w-7xl flex items-center gap-4">
+        <!-- 搜索源 -->
+        <el-select v-model="searchParam.name" class="w-32" placeholder="源">
+          <el-option v-for="s in scrapers" :key="s.value" :value="s.value" :label="s.label" />
+        </el-select>
 
-    <!-- 主体区域 -->
-    <div class="flex flex-1 overflow-hidden">
-      <div
-        class="grid grid auto-rows-max grid-cols-1 flex-1 gap-4 gap-6 overflow-y-auto p-4 p-4 2xl:grid-cols-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 xl:grid-cols-5"
-      >
-        <el-tooltip
-          v-for="g in games"
-          :key="g.url"
-          effect="light"
-          placement="right-end"
+        <!-- 搜索框 -->
+        <el-input
+          v-model="searchParam.keyword"
+          placeholder="输入游戏名称..."
+          class="max-w-2xl flex-1"
+          size="large"
+          clearable
+          @keyup.enter="handleSearch"
         >
-          <template #content>
-            <p style="word-break: normal; white-space: pre-wrap; word-wrap: break-word;">
-              {{ g.name }}
-            </p>
+          <template #prepend>
+            <el-button :icon="Search" @click="handleSearch" />
           </template>
-          <GameCard
-            :game="g"
-            class="cursor-pointer"
-            @click="toggleSelect(g)"
-          />
-        </el-tooltip>
+        </el-input>
+
+        <!-- 分页 (可选) -->
+        <el-input-number v-model="searchParam.page" :min="1" class="w-24" controls-position="right" />
+
+        <el-button type="primary" size="large" :loading="loading" @click="handleSearch">
+          搜索
+        </el-button>
       </div>
 
-      <!-- 右侧已选择竖条，固定 -->
-      <div class="w-38 overflow-y-auto border-l bg-gray-50 p-4 dark:bg-gray-700">
-        <h2 class="mb-2 font-bold">
-          已选择
-        </h2>
-        <GameCard
-          v-for="game in selectedGames"
-          :key="game.url"
-          :game="game"
-          class="cursor-pointer"
-          mb-4
-          @click="toggleSelect(game)"
-        />
+      <!-- 2. 搜索结果 Tabs (如有结果) -->
+      <div v-if="resultSources.length > 0" class="mx-auto mt-4 max-w-7xl flex gap-2 overflow-x-auto pb-1">
+        <button
+          v-for="source in resultSources"
+          :key="source"
+          class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          :class="activeSource === source
+            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-200'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'"
+          @click="activeSource = source"
+        >
+          {{ source.toUpperCase() }}
+          <span class="ml-1 rounded-full bg-white/50 px-1.5 text-xs opacity-70">
+            {{ scrapResultsMap.get(source)?.length }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. 主体内容：结果 + 购物车 -->
+    <div class="mx-auto w-full max-w-screen-2xl flex flex-1 overflow-hidden">
+      <!-- 左侧：结果网格 -->
+      <div class="relative flex-1 overflow-y-auto p-6">
+        <!-- 加载状态 -->
+        <div v-if="loading" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80">
+          <el-icon class="is-loading mb-2 text-blue-500" :size="40">
+            <Loading />
+          </el-icon>
+          <p class="text-gray-500">
+            正在从各大站点抓取数据，请稍候...
+          </p>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-else-if="resultSources.length === 0" class="h-full flex flex-col items-center justify-center text-gray-400">
+          <el-icon :size="60" class="mb-4 opacity-20">
+            <Search />
+          </el-icon>
+          <p>暂无搜索结果，请尝试更换关键词或数据源</p>
+        </div>
+
+        <!-- Grid 列表 -->
+        <div v-else class="grid grid-cols-2 gap-6 2xl:grid-cols-6 lg:grid-cols-4 md:grid-cols-3 xl:grid-cols-5">
+          <div
+            v-for="g in currentDisplayGames"
+            :key="g.url"
+            class="group relative cursor-pointer overflow-hidden border-2 rounded-xl bg-white shadow-sm transition-all dark:bg-gray-800 hover:shadow-md"
+            :class="isSelected(g) ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'"
+            @click="toggleSelect(g)"
+          >
+            <!-- 选中角标 -->
+            <div v-if="isSelected(g)" class="absolute right-0 top-0 z-10 rounded-bl-lg bg-blue-500 px-2 py-1 text-white shadow-sm">
+              <el-icon><Check /></el-icon>
+            </div>
+
+            <!-- 复用你的 GameCard，或者直接写结构 -->
+            <GameCard :game="g" class="pointer-events-none" />
+
+            <!-- Hover 遮罩 -->
+            <div class="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：待处理清单 (Cart) -->
+      <div class="z-30 w-80 flex flex-col border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+        <div class="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+          <h2 class="flex items-center gap-2 text-gray-800 font-bold dark:text-white">
+            <el-icon><MagicStick /></el-icon>
+            已选游戏 ({{ selectedGames.length }})
+          </h2>
+          <p class="mt-1 truncate text-xs text-gray-500" :title="gamePath">
+            目标路径: {{ gamePath }}
+          </p>
+        </div>
+
+        <!-- 已选列表 -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div v-if="selectedGames.length === 0" class="py-10 text-center text-sm text-gray-400">
+            点击左侧卡片<br>添加到刮削队列
+          </div>
+
+          <div
+            v-for="g in selectedGames"
+            :key="g.url"
+            class="group flex items-center gap-3 rounded-lg bg-gray-50 p-2 dark:bg-gray-700/50"
+          >
+            <!-- 缩略图 -->
+            <img :src="g.cover" class="h-16 w-12 rounded bg-gray-200 object-cover">
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm text-gray-800 font-bold dark:text-gray-200">
+                {{ g.name }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ g.scraper_name }}
+              </div>
+            </div>
+            <!-- 删除按钮 -->
+            <button
+              class="rounded-md p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+              @click.stop="toggleSelect(g)"
+            >
+              <el-icon><Delete /></el-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div class="border-t border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <el-button
+            type="primary"
+            size="large"
+            class="w-full !h-12 !text-lg !font-bold"
+            :disabled="selectedGames.length === 0"
+            @click="submitAutoScrape"
+          >
+            开始刮削
+          </el-button>
+          <div class="mt-2 text-center">
+            <el-button link size="small" type="info" @click="selectedGames = []">
+              清空选择
+            </el-button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
-  <GameMergeDialog :visible="gameStore.showScraper" :game-path="gamePath" @close="gameStore.showScraper = false" />
 </template>
+
+<style scoped>
+/* 优化 GameCard 的样式，确保它填充父容器 */
+:deep(.game-card) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+</style>
