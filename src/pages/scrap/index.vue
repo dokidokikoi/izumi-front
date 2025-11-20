@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {
   ScraperAutoReq,
+  ScraperDetailReq,
   ScraperGetRespItem,
   ScraperSearchReq,
 } from '~/types'
@@ -9,12 +10,11 @@ import { ElMessage, ElNotification } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { scrapApi } from '~/apis/game'
+import { useGameStore } from '~/stores/gameStore'
 import { useWebSocket } from '~/utils/websocket'
 
-// 假设你有这些组件
-// import GameCard from '~/components/GameCard.vue'
-
 const route = useRoute()
+const gameStore = useGameStore()
 
 // --- 状态管理 ---
 const loading = ref(false)
@@ -60,7 +60,7 @@ function handleSearch() {
   scrapResultsMap.value.clear()
   resultSources.value = []
   activeSource.value = ''
-  selectedGames.value = []
+  // selectedGames.value = []
 
   scrapApi.search(searchParam.value)
     .then(() => {
@@ -103,6 +103,27 @@ function submitAutoScrape() {
     selectedGames.value = []
   })
 }
+
+// 监听 selectScrapResult，执行刮削
+const scraperDetailReq = ref<ScraperDetailReq>({
+  request_id: '',
+  objs: [],
+})
+watch(
+  () => gameStore.showScraper,
+  (newVal) => {
+    if (newVal) {
+      scraperDetailReq.value.objs = []
+      for (const item of selectedGames.value) {
+        scraperDetailReq.value?.objs.push({
+          name: item.scraper_name,
+          url: item.url,
+        })
+      }
+      scrapApi.scrap(scraperDetailReq.value)
+    }
+  },
+)
 
 // --- 初始化 & WebSocket ---
 
@@ -151,7 +172,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-64px)] flex flex-col bg-gray-50 dark:bg-gray-900">
+  <div class="h-[calc(100vh-104px)] flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- 1. 顶部搜索栏 -->
     <div class="z-10 border-b border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div class="mx-auto max-w-7xl flex items-center gap-4">
@@ -202,7 +223,7 @@ onMounted(() => {
     </div>
 
     <!-- 3. 主体内容：结果 + 购物车 -->
-    <div class="mx-auto w-full max-w-screen-2xl flex flex-1 overflow-hidden">
+    <div class="mx-auto w-full flex flex-1 overflow-hidden">
       <!-- 左侧：结果网格 -->
       <div class="relative flex-1 overflow-y-auto p-6">
         <!-- 加载状态 -->
@@ -309,6 +330,8 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <GameMergeDialog :visible="gameStore.showScraper" :game-path="gamePath" @close="gameStore.showScraper = false" />
 </template>
 
 <style scoped>

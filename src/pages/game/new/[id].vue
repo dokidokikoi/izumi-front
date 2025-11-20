@@ -43,11 +43,11 @@ const languages = ref<string[]>([])
 const platforms = ref<string[]>([])
 
 // --- UI 状态控制 ---
-const activeTab = ref('故事')
-const tabs = ['故事', '角色', '图片集', '参与成员', '相关链接', '其他信息']
+const activeTab = ref('角色')
+const tabs = ['角色', '图片集', '参与成员', '相关链接', '其他信息']
 const isStoryExpanded = ref(false) // 简介折叠状态
 const isTagsExpanded = ref(false) // 标签折叠状态
-const TAG_LIMIT = 10 // 标签默认显示数量
+const TAG_LIMIT = 50 // 标签默认显示数量
 const showUpdate = ref(false) // 更新确认弹窗
 const showAddGameIns = ref(false) // 添加实例弹窗
 
@@ -293,11 +293,11 @@ function rmImage(img: string) {
     </div>
 
     <!-- 2. 主要内容区域 (z-index 提升) -->
-    <div class="relative z-10 mx-auto max-w-7xl px-4 pt-8 lg:px-8 sm:px-6">
+    <div class="relative z-10 mx-auto max-w-[100rem] px-4 pt-8 lg:px-8 sm:px-6">
       <!-- 核心布局：两栏设计 -->
       <div class="flex flex-col items-start gap-8 md:flex-row">
         <!-- [左栏] 粘性侧边栏：封面 + 快捷操作 + 硬核信息 -->
-        <div class="z-30 w-full flex-shrink-0 md:sticky md:top-0 md:w-80">
+        <div class="z-30 w-full flex-shrink-0 md:sticky md:top--3 md:w-80">
           <div class="space-y-6">
             <!-- 封面图 -->
             <div class="group relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-gray-200 shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/10">
@@ -465,8 +465,8 @@ function rmImage(img: string) {
             </h3>
             <div v-if="!gameStore.showEdit">
               <div
-                class="overflow-hidden text-gray-700 leading-relaxed transition-all duration-300 dark:text-gray-300"
-                :class="isStoryExpanded ? '' : 'line-clamp-4 max-h-32'"
+                class="overflow-hidden text-left text-gray-700 leading-relaxed transition-all duration-300 dark:text-gray-300"
+                :class="isStoryExpanded ? '' : 'line-clamp-16 max-h-100'"
                 v-html="game?.story || '<span class=\'text-gray-400 italic\'>暂无简介</span>'"
               />
               <!-- 展开遮罩 -->
@@ -487,10 +487,10 @@ function rmImage(img: string) {
           <!-- 4. Tabs 导航与内容 -->
           <div>
             <!-- Sticky Tab Header -->
-            <div class="sticky top-0 z-20 mb-6 border-b border-gray-200 bg-white/90 px-4 pt-2 backdrop-blur -mx-4 md:mx-0 dark:border-gray-800 md:rounded-t-lg dark:bg-gray-900/90 md:px-0">
-              <div class="no-scrollbar flex gap-8 overflow-x-auto">
+            <div class="sticky top--4 z-20 mb-6 border-b border-gray-200 bg-white/90 px-4 pt-2 backdrop-blur -mx-4 md:mx-0 dark:border-gray-800 md:rounded-lg dark:bg-gray-900/90 md:px-3">
+              <div class="no-scrollbar flex gap-8 overflow-x-auto px-4">
                 <button
-                  v-for="tab in tabs" :key="tab" class="whitespace-nowrap border-b-2 px-1 pb-3 text-base font-medium transition-colors"
+                  v-for="tab in tabs" :key="tab" class="whitespace-nowrap border-b-2 px-1 pb-2 text-base font-medium transition-colors"
                   :class="activeTab === tab ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
                   @click="activeTab = tab"
                 >
@@ -702,9 +702,9 @@ function rmImage(img: string) {
   <!-- 角色详情弹窗 -->
   <el-dialog
     v-model="showCharacterModal"
-    width="800px"
-    align-center
-    destroy-on-close
+    width="1000px"
+
+    destroy-on-close align-center
     class="overflow-hidden rounded-2xl"
   >
     <div v-if="selectedCharacter" class="flex flex-col gap-8 -mx-6 -mb-6 -mt-6 md:flex-row">

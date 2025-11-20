@@ -20,7 +20,7 @@ onMounted(() => {
         ElNotification({
           title: data.message,
           type: data.success ? 'success' : 'error',
-          duration: 3000,
+          duration: 10000,
           position: 'top-right',
         })
       }
@@ -48,7 +48,7 @@ const toggleCollapse = () => (isCollapsed.value = !isCollapsed.value)
         class="mainRef"
         text="center gray-700 dark:gray-200 overflow-auto"
         style="height: calc(100vh - 64px);"
-        flex-1 overflow-auto p6
+        flex-1 overflow-auto px-6 pt-6
       >
         <router-view />
       </div>

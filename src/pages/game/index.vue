@@ -153,7 +153,7 @@ onMounted(() => {
 })
 
 function go(id: number) {
-  router.push(`/game/${id}`)
+  router.push(`/game/new/${id}`)
 }
 </script>
 
@@ -185,11 +185,8 @@ function go(id: number) {
               <label class="pl-1 text-[10px] text-gray-400 font-bold tracking-wider uppercase">Tags / 标签</label>
               <el-select
                 v-model="filters.tags"
-                multiple
-                collapse-tags
-                collapse-tags-tooltip
-                filterable
-                clearable
+
+                multiple filterable clearable collapse-tags collapse-tags-tooltip
                 placeholder="选择标签..."
                 class="w-full"
                 popper-class="custom-select-popper"

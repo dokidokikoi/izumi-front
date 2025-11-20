@@ -30,7 +30,7 @@ const route = useRoute()
 // 判断是否在游戏列表页面
 const showSearch = computed(() => route.name === '/game/')
 const showScraper = computed(() => route.name === '/scrap/')
-const showEdit = computed(() => route.name === '/game/[id]')
+const showEdit = computed(() => route.name === '/game/[id]' || route.name === '/game/new/[id]')
 const showUpdateSetting = computed(() => route.name === '/policy')
 const showLogo = computed(() => route.name !== '/')
 const showLibrary = computed(() => route.name === '/library')
@@ -69,7 +69,7 @@ function downloadGameInfo() {
 
 <template>
   <header
-    class="flex items-center justify-between bg-white px-6 py-3 shadow-md dark:bg-gray-900"
+    class="relative z-100 flex items-center justify-between bg-white px-6 py-3 shadow-md dark:bg-gray-900"
     un-border="b gray-100 dark:gray-700"
   >
     <!-- 左侧 Logo -->

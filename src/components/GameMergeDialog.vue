@@ -670,7 +670,7 @@ onMounted(() => {
 <template>
   <div
     v-if="visible"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    class="fixed inset-0 z-150 flex items-center justify-center bg-black bg-opacity-50"
   >
     <div class="h-full w-full flex flex-col bg-white dark:bg-gray-900">
       <!-- header -->
