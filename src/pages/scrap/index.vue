@@ -172,9 +172,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-104px)] flex flex-col bg-gray-50 dark:bg-gray-900">
+  <div class="h-[calc(100vh-104px)] flex flex-col bg-overlay">
     <!-- 1. 顶部搜索栏 -->
-    <div class="z-10 border-b border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="z-10 border-b border-base bg-card p-4 shadow-sm">
       <div class="mx-auto max-w-7xl flex items-center gap-4">
         <!-- 搜索源 -->
         <el-select v-model="searchParam.name" class="w-32" placeholder="源">
@@ -268,8 +268,8 @@ onMounted(() => {
       </div>
 
       <!-- 右侧：待处理清单 (Cart) -->
-      <div class="z-30 w-80 flex flex-col border-l border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
-        <div class="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+      <div class="z-30 w-80 flex flex-col border-l border-base bg-card shadow-xl">
+        <div class="border-b border-base p-4">
           <h2 class="flex items-center gap-2 text-gray-800 font-bold dark:text-white">
             <el-icon><MagicStick /></el-icon>
             已选游戏 ({{ selectedGames.length }})
@@ -288,21 +288,21 @@ onMounted(() => {
           <div
             v-for="g in selectedGames"
             :key="g.url"
-            class="group flex items-center gap-3 rounded-lg bg-gray-50 p-2 dark:bg-gray-700/50"
+            class="group flex items-center gap-3 border border-base rounded-lg p-2 hover:border-strong"
           >
             <!-- 缩略图 -->
             <img :src="g.cover" class="h-16 w-12 rounded bg-gray-200 object-cover">
             <div class="min-w-0 flex-1">
-              <div class="truncate text-sm text-gray-800 font-bold dark:text-gray-200">
+              <div class="truncate text-sm text-main font-bold">
                 {{ g.name }}
               </div>
-              <div class="text-xs text-gray-500">
+              <div class="text-xs text-muted">
                 {{ g.scraper_name }}
               </div>
             </div>
             <!-- 删除按钮 -->
             <button
-              class="rounded-md p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+              class="rounded-md p-1.5 text-gray-400 transition hover:bg-hover hover:text-red-500"
               @click.stop="toggleSelect(g)"
             >
               <el-icon><Delete /></el-icon>
@@ -319,9 +319,12 @@ onMounted(() => {
             :disabled="selectedGames.length === 0"
             @click="submitAutoScrape"
           >
-            开始刮削
+            开始自动刮削
           </el-button>
           <div class="mt-2 text-center">
+            <el-button link size="small" type="info" @click="gameStore.showScraper = true">
+              手动刮削
+            </el-button>
             <el-button link size="small" type="info" @click="selectedGames = []">
               清空选择
             </el-button>
@@ -340,5 +343,25 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+:deep(.el-select__wrapper) {
+  background-color: rgba(var(--c-bg-input), 1);
+  box-shadow: 0 0 0 1px rgba(var(--c-border-strong), 1) inset;
+}
+/* 输入框背景适配 */
+:deep(.el-input__wrapper) {
+  background-color: rgba(var(--c-bg-input), 1);
+  box-shadow: 0 0 0 1px rgba(var(--c-border-strong), 1) inset;
+}
+:deep(.el-input-group__prepend) {
+  --el-input-border-color: rgba(var(--c-border), 1);
+}
+:deep(.el-input-number.is-controls-right) {
+  --el-border: rgba(var(--c-border), 1);
+}
+:deep(.el-button:hover) {
+  background-color: rgba(var(--c-primary), 1);
+  border-color: rgba(var(--c-border-strong), 1);
+  color: white;
 }
 </style>

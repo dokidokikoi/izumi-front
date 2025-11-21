@@ -639,7 +639,7 @@ function rmImage(image: string) {
                     class="mb-1 mr-1 inline-block flex cursor-pointer items-center whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white"
                   >
                     {{ brand.name }}
-                    <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="editGame.brands.splice(index, 1)">
+                    <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="editGame.brands?.splice(index, 1)">
                       <div i="carbon-close" class="z-20 h-4 w-4" />
                     </button>
                   </span>

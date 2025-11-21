@@ -1,15 +1,18 @@
 <script setup lang="ts">
-// 导入你的类型和API (保持你原有的路径)
+// 导入你的类型和API
 import type { Brand, Category, Character, Game, GameInstance, Series, Tag } from '~/types'
 import {
   Camera,
+  Clock,
   Connection,
   Delete,
   Female,
+  FolderOpened,
   Guide,
   Male,
   Monitor,
   More,
+  OfficeBuilding,
   Plus,
   Star,
 } from '@element-plus/icons-vue'
@@ -18,7 +21,7 @@ import { useRoute } from 'vue-router'
 import { brandApi, categoryApi, gameApi, seriesApi, tagApi } from '~/apis/game'
 import { languageEnum, platformEnum } from '~/config/enum'
 import { iconMap } from '~/config/icon'
-import { useGameStore } from '~/stores/gameStore' // 假设你的 store 路径
+import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
 
 const route = useRoute()
@@ -45,13 +48,13 @@ const platforms = ref<string[]>([])
 // --- UI 状态控制 ---
 const activeTab = ref('角色')
 const tabs = ['角色', '图片集', '参与成员', '相关链接', '其他信息']
-const isStoryExpanded = ref(false) // 简介折叠状态
-const isTagsExpanded = ref(false) // 标签折叠状态
-const TAG_LIMIT = 50 // 标签默认显示数量
-const showUpdate = ref(false) // 更新确认弹窗
-const showAddGameIns = ref(false) // 添加实例弹窗
+const isStoryExpanded = ref(false)
+const isTagsExpanded = ref(false)
+const TAG_LIMIT = 50
+const showUpdate = ref(false)
+const showAddGameIns = ref(false)
 
-// --- 辅助变量 (保持原有逻辑) ---
+// --- 辅助变量 ---
 const createCategoryID = ref<number>(0)
 const createBrandID = ref(0)
 const showAddAlias = ref(false)
@@ -116,7 +119,7 @@ async function updateGame() {
   getIns()
   gameApi.update(editGame.value).then(() => {
     showUpdate.value = false
-    game.value = JSON.parse(JSON.stringify(editGame.value)) // Optimistic update
+    game.value = JSON.parse(JSON.stringify(editGame.value))
     getGame()
   })
 }
@@ -138,7 +141,7 @@ function addGameIns() {
 function appendAlias() {
   if (!editGame.value.alias)
     editGame.value.alias = []
-  // 修复点 1: 将多条语句展开
+
   if (createAlias.value) {
     editGame.value.alias.push(createAlias.value)
     createAlias.value = ''
@@ -265,7 +268,6 @@ function getUploadUrl() {
   return prefix.concat('/file/upload')
 }
 
-// 修复点 2 & 3: 展开一行内的多条语句
 function handleImageUploadSuccess(res: any) {
   if (!editGame.value.images) {
     editGame.value.images = []
@@ -294,11 +296,15 @@ function rmImage(img: string) {
 
     <!-- 2. 主要内容区域 (z-index 提升) -->
     <div class="relative z-10 mx-auto max-w-[100rem] px-4 pt-8 lg:px-8 sm:px-6">
-      <!-- 核心布局：两栏设计 -->
-      <div class="flex flex-col items-start gap-8 md:flex-row">
-        <!-- [左栏] 粘性侧边栏：封面 + 快捷操作 + 硬核信息 -->
-        <div class="z-30 w-full flex-shrink-0 md:sticky md:top--3 md:w-80">
-          <div class="space-y-6">
+      <!-- 核心布局：两栏设计 (移除了 items-start 以实现等高拉伸) -->
+      <div class="relative flex flex-col gap-8 md:flex-row">
+        <!-- [左栏] 粘性侧边栏容器：负责占位和高度拉伸 -->
+        <div class="relative w-full flex-shrink-0 md:w-80">
+          <!-- 视觉分割线 (可选) -->
+          <div class="absolute bottom-0 top-0 hidden w-px bg-gray-200/50 -right-4 md:block dark:bg-gray-800/50" />
+
+          <!-- 真正的内容层：负责吸顶 (Sticky) -->
+          <div class="md:sticky md:top-24 space-y-6">
             <!-- 封面图 -->
             <div class="group relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-gray-200 shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/10">
               <img
@@ -327,15 +333,21 @@ function rmImage(img: string) {
             </div>
 
             <!-- 硬核信息表 (Info Table) -->
-            <div class="border border-gray-200/50 rounded-xl bg-white/60 p-5 text-sm shadow-sm backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-800/60">
+            <div class="border border-base rounded-xl bg-card p-5 text-sm shadow-sm backdrop-blur-md">
               <h4 class="mb-4 text-xs text-gray-400 font-bold tracking-wider uppercase">
                 游戏信息
               </h4>
-
               <div class="space-y-4">
                 <!-- 开发商 -->
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">开发商</span>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <OfficeBuilding color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">品牌</span>
+                  </div>
                   <div class="ml-4 flex-1 text-right font-medium">
                     <template v-if="!gameStore.showEdit">
                       <span v-for="b in game.brands" :key="b.id" class="block cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">{{ b.name }}</span>
@@ -352,31 +364,48 @@ function rmImage(img: string) {
                     </div>
                   </div>
                 </div>
-
                 <!-- 发行日期 -->
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">发行日期</span>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Clock color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">发行日期</span>
+                  </div>
                   <span v-if="!gameStore.showEdit" class="font-medium">{{ game.issue_date?.slice(0, 10) || '-' }}</span>
                   <el-date-picker v-else v-model="editGame.issue_date" type="date" size="small" style="width: 130px" />
                 </div>
-
                 <!-- 平台 -->
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">平台</span>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Monitor color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">平台</span>
+                  </div>
                   <div class="flex gap-1">
                     <div v-for="p in platforms" :key="p" :class="iconMap[p]" class="h-5 w-5" :title="p" />
                   </div>
                 </div>
-
                 <!-- 分类 -->
                 <div class="flex items-center justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">分类</span>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <FolderOpened color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">分类</span>
+                  </div>
                   <span v-if="!gameStore.showEdit" class="font-medium">{{ game.category?.name || '-' }}</span>
                   <el-select v-else v-model="createCategoryID" size="small" style="width: 130px">
                     <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
                   </el-select>
                 </div>
-
                 <!-- 相关链接 -->
                 <div class="border-t border-gray-200 pt-3 dark:border-gray-700">
                   <div class="flex flex-col gap-2">
@@ -384,7 +413,6 @@ function rmImage(img: string) {
                       <el-icon><Connection /></el-icon> {{ link.name }}
                     </a>
                     <div v-if="gameStore.showEdit">
-                      <!-- 简单的链接编辑入口，更复杂的建议在Tab里做 -->
                       <el-button size="small" icon="Edit" @click="activeTab = '相关链接'">
                         编辑链接
                       </el-button>
@@ -413,7 +441,6 @@ function rmImage(img: string) {
                 + 别名
               </el-button>
             </div>
-            <!-- 编辑别名弹窗逻辑略，可直接在原位 Input -->
             <div v-if="showAddAlias" class="mt-2 flex gap-2">
               <el-input v-model="createAlias" size="small" placeholder="输入别名" @keyup.enter="appendAlias" />
             </div>
@@ -431,8 +458,6 @@ function rmImage(img: string) {
                 #{{ tag.name }}
                 <el-icon v-if="gameStore.showEdit" class="hover:text-red-500" @click.stop="removeTag(tag.name)"><Delete /></el-icon>
               </span>
-
-              <!-- 展开按钮 -->
               <button
                 v-if="!gameStore.showEdit && !isTagsExpanded && (game.tags?.length || 0) > TAG_LIMIT"
                 class="flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 font-bold transition dark:bg-gray-700 hover:bg-gray-200 dark:text-gray-300"
@@ -442,12 +467,9 @@ function rmImage(img: string) {
                   <More />
                 </el-icon> 还有 {{ (game.tags?.length || 0) - TAG_LIMIT }} 个
               </button>
-              <!-- 收起按钮 -->
               <button v-if="!gameStore.showEdit && isTagsExpanded" class="text-xs text-gray-400 hover:text-blue-500" @click="isTagsExpanded = false">
                 收起
               </button>
-
-              <!-- 添加按钮 -->
               <div v-if="gameStore.showEdit" class="flex items-center gap-2">
                 <el-select v-model="createTagID" size="small" filterable placeholder="选择标签" class="w-32">
                   <el-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id" />
@@ -459,7 +481,7 @@ function rmImage(img: string) {
           </div>
 
           <!-- 3. 简介 (带折叠) -->
-          <div class="relative border border-gray-200/50 rounded-2xl bg-white/50 p-6 backdrop-blur-sm dark:border-gray-700/50 dark:bg-gray-800/50">
+          <div class="relative border border-base rounded-2xl bg-card p-6 backdrop-blur-sm">
             <h3 class="mb-3 text-xs text-gray-400 font-bold tracking-wider uppercase">
               简介
             </h3>
@@ -469,7 +491,6 @@ function rmImage(img: string) {
                 :class="isStoryExpanded ? '' : 'line-clamp-16 max-h-100'"
                 v-html="game?.story || '<span class=\'text-gray-400 italic\'>暂无简介</span>'"
               />
-              <!-- 展开遮罩 -->
               <div v-if="!isStoryExpanded && (game.story?.length || 0) > 100" class="absolute bottom-0 left-0 h-16 w-full flex items-end justify-center rounded-b-2xl from-white to-transparent bg-gradient-to-t pb-2 dark:from-gray-800">
                 <button class="border border-gray-100 rounded-full bg-white/90 px-4 py-1.5 text-xs text-blue-600 font-bold shadow-sm dark:border-gray-700 dark:bg-gray-800/90 dark:text-blue-400 hover:underline" @click="isStoryExpanded = true">
                   展开阅读全文
@@ -487,11 +508,11 @@ function rmImage(img: string) {
           <!-- 4. Tabs 导航与内容 -->
           <div>
             <!-- Sticky Tab Header -->
-            <div class="sticky top--4 z-20 mb-6 border-b border-gray-200 bg-white/90 px-4 pt-2 backdrop-blur -mx-4 md:mx-0 dark:border-gray-800 md:rounded-lg dark:bg-gray-900/90 md:px-3">
+            <div class="sticky top--4 z-20 mb-6 border-b border-base bg-card px-4 pt-2 backdrop-blur -mx-4 md:mx-0 md:rounded-lg md:px-3">
               <div class="no-scrollbar flex gap-8 overflow-x-auto px-4">
                 <button
                   v-for="tab in tabs" :key="tab" class="whitespace-nowrap border-b-2 px-1 pb-2 text-base font-medium transition-colors"
-                  :class="activeTab === tab ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+                  :class="activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
                   @click="activeTab = tab"
                 >
                   {{ tab }}
@@ -509,7 +530,6 @@ function rmImage(img: string) {
                   </el-button>
                 </div>
 
-                <!-- 角色 Grid -->
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                   <div
                     v-for="(char, idx) in (gameStore.showEdit ? editGame.characters : game.characters)"
@@ -517,7 +537,6 @@ function rmImage(img: string) {
                     class="group relative overflow-hidden border border-gray-100 rounded-xl bg-white shadow-sm transition dark:border-gray-700 dark:bg-gray-800 hover:shadow-md"
                     @click="!gameStore.showEdit && openCharacterDetail(char)"
                   >
-                    <!-- 头像 -->
                     <div class="relative aspect-square overflow-hidden bg-gray-200">
                       <img :src="imageUrl(char.cover)" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
                       <div class="absolute bottom-0 left-0 w-full from-black/90 to-transparent bg-gradient-to-t p-3 pt-8">
@@ -526,7 +545,6 @@ function rmImage(img: string) {
                         </div>
                       </div>
                     </div>
-                    <!-- 信息 -->
                     <div class="p-3">
                       <div class="mb-1 flex items-center justify-between">
                         <div class="flex-1 truncate text-gray-900 font-bold dark:text-white" :title="char.name">
@@ -542,10 +560,7 @@ function rmImage(img: string) {
                       <p class="line-clamp-2 h-8 text-xs text-gray-500 dark:text-gray-400">
                         {{ char.summary || '暂无描述' }}
                       </p>
-
-                      <!-- 编辑态 -->
                       <div v-if="gameStore.showEdit" class="mt-2 border-t border-gray-100 pt-2 dark:border-gray-700">
-                        <!-- 这里可以放简单的 Input 替换，或者点击弹窗编辑，为了简洁演示删除 -->
                         <div class="flex justify-between">
                           <el-button size="small" text bg>
                             编辑
@@ -561,7 +576,6 @@ function rmImage(img: string) {
               <!-- 图片集 Tab -->
               <div v-show="activeTab === '图片集'" class="animate-fade-in">
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 sm:grid-cols-3">
-                  <!-- Upload Box -->
                   <div v-if="gameStore.showEdit" class="aspect-video flex flex-col items-center justify-center border-2 border-gray-300 rounded-xl border-dashed bg-gray-50 transition dark:border-gray-700 hover:border-blue-500 dark:bg-gray-800/50">
                     <el-upload :show-file-list="false" :action="getUploadUrl()" :on-success="handleImageUploadSuccess" class="h-full w-full flex items-center justify-center">
                       <div class="text-center">
@@ -574,7 +588,6 @@ function rmImage(img: string) {
                       </div>
                     </el-upload>
                   </div>
-                  <!-- Images -->
                   <div v-for="(img, i) in (gameStore.showEdit ? editGame.images : game.images)" :key="i" class="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-gray-100">
                     <el-image
                       :src="imageUrl(img)"
@@ -628,7 +641,6 @@ function rmImage(img: string) {
                   </a>
                 </div>
                 <div v-else>
-                  <!-- 简单的链接编辑列表 -->
                   <div v-for="(l, i) in editGame.links" :key="i" class="mb-2 flex gap-2">
                     <el-input v-model="l.name" placeholder="名称" />
                     <el-input v-model="l.url" placeholder="URL" />
@@ -651,7 +663,7 @@ function rmImage(img: string) {
       </div>
     </div>
 
-    <!-- 弹窗组件 (保持不变) -->
+    <!-- 弹窗组件 -->
     <el-dialog v-model="showUpdate" title="更新确认" width="400px" center>
       <span class="block py-4 text-center text-lg">确认保存所有修改吗？</span>
       <template #footer>
@@ -666,7 +678,6 @@ function rmImage(img: string) {
       </template>
     </el-dialog>
 
-    <!-- 添加实体弹窗 (复用你原有逻辑，稍微美化) -->
     <el-dialog v-model="showAddGameIns" title="添加游戏资源" width="500px">
       <div class="px-2 space-y-4">
         <el-input v-model="createGameIns.path" placeholder="路径">
@@ -703,8 +714,7 @@ function rmImage(img: string) {
   <el-dialog
     v-model="showCharacterModal"
     width="1000px"
-
-    destroy-on-close align-center
+    align-center destroy-on-close
     class="overflow-hidden rounded-2xl"
   >
     <div v-if="selectedCharacter" class="flex flex-col gap-8 -mx-6 -mb-6 -mt-6 md:flex-row">
@@ -724,38 +734,32 @@ function rmImage(img: string) {
           </div>
         </div>
       </div>
-
       <!-- 右侧：详细信息 -->
       <div class="max-h-[600px] flex flex-1 flex-col overflow-y-auto py-8 pl-8 pr-8 md:pl-0">
         <!-- 头部：姓名与性别 -->
         <div class="mb-6 flex items-start justify-between">
           <div>
-            <h2 class="mb-1 text-3xl text-gray-900 font-extrabold dark:text-white">
+            <h2 class="mb-1 mb-4 text-3xl text-gray-900 font-extrabold dark:text-white">
               {{ selectedCharacter.name }}
             </h2>
-            <div class="flex gap-2">
-              <span v-for="alias in selectedCharacter.alias" :key="alias" class="rounded bg-gray-100 px-2 py-0.5 text-sm text-gray-500 dark:bg-gray-800">{{ alias }}</span>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="alias in selectedCharacter.alias" :key="alias" class="rounded bg-gray-100 px-2 py-0.5 text-nowrap text-sm text-gray-500 dark:bg-gray-800">{{ alias }}</span>
             </div>
           </div>
-          <div class="rounded-full bg-gray-50 p-2 dark:bg-gray-800">
-            <el-icon v-if="selectedCharacter.gender === 'Female'" :size="24" color="pink">
+          <div class="flex rounded-full bg-gray-50 p-2 dark:bg-gray-800">
+            <el-icon v-if="selectedCharacter.gender === 'female'" :size="20" color="pink">
               <Female />
             </el-icon>
-            <el-icon v-else-if="selectedCharacter.gender === 'Male'" :size="24" color="#409EFF">
+            <el-icon v-else-if="selectedCharacter.gender === 'male'" :size="20" color="#409EFF">
               <Male />
             </el-icon>
           </div>
         </div>
-
         <!-- 简介 -->
         <div class="mb-8 border border-gray-100 rounded-xl bg-gray-50 p-4 text-sm text-gray-600 leading-relaxed prose dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:prose-invert">
           {{ selectedCharacter.summary || '暂无角色简介...' }}
         </div>
-
-        <!-- 属性网格 (身高/三围等) -->
-        <h3 class="mb-4 text-xs text-gray-400 font-bold tracking-wider uppercase">
-          个人档案
-        </h3>
+        <!-- 属性网格 -->
         <div class="grid grid-cols-2 mb-8 gap-4 sm:grid-cols-3">
           <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
             <div class="mb-1 text-xs text-gray-400">
@@ -789,7 +793,6 @@ function rmImage(img: string) {
               {{ selectedCharacter.personal_info?.weight || '-' }}
             </div>
           </div>
-          <!-- 三围 BWH -->
           <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
             <div class="mb-1 text-xs text-gray-400">
               B (胸围)
@@ -815,8 +818,7 @@ function rmImage(img: string) {
             </div>
           </div>
         </div>
-
-        <!-- 更多图片 (Gallery) -->
+        <!-- 图集 -->
         <div v-if="selectedCharacter.images && selectedCharacter.images.length > 0">
           <h3 class="mb-4 text-xs text-gray-400 font-bold tracking-wider uppercase">
             图集
@@ -847,7 +849,6 @@ function rmImage(img: string) {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 /* 淡入动画 */
 .animate-fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);

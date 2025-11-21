@@ -8,15 +8,15 @@ defineProps<{
 
 <template>
   <div
-    class="border border-gray-200 rounded-2xl bg-white shadow-sm transition-all duration-300 dark:border-gray-700 dark:bg-gray-800"
+    class="border border-base rounded-2xl bg-card shadow-sm transition-all duration-300"
     :class="hoverable ? 'hover:shadow-md hover:-translate-y-1' : ''"
   >
     <!-- Header -->
-    <div v-if="title || subtitle" class="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-      <h3 v-if="title" class="text-lg text-gray-900 font-semibold dark:text-gray-100">
+    <div v-if="title || subtitle" class="border-b border-base px-4 py-3">
+      <h3 v-if="title" class="text-lg font-semibold">
         {{ title }}
       </h3>
-      <p v-if="subtitle" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p v-if="subtitle" class="mt-1 text-sm text-muted">
         {{ subtitle }}
       </p>
     </div>

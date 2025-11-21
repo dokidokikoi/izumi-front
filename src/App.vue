@@ -9,10 +9,6 @@ useHead({
       name: 'description',
       content: 'Opinionated Vite Starter Template',
     },
-    {
-      name: 'theme-color',
-      content: () => isDark.value ? '#00aba9' : '#ffffff',
-    },
   ],
   link: [
     {

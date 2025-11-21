@@ -158,7 +158,7 @@ function go(id: number) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white pb-10 dark:bg-gray-900">
+  <div class="min-h-screen bg-page pb-10">
     <!-- 1. 顶部筛选面板 (折叠式) -->
     <transition
       enter-active-class="transition duration-200 ease-out"
@@ -172,7 +172,7 @@ function go(id: number) {
         v-show="gameStore.showAdvanced"
         class="sticky top-[0px] z-30 transition-all duration-300"
         :class="gameStore.showAdvanced
-          ? 'py-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm'
+          ? 'py-4 bg-page backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm'
           : 'h-0 overflow-hidden py-0 border-none'"
       >
         <!-- 使用 v-show 控制内容显示，配合外层 div 的高度动画 -->
@@ -186,7 +186,7 @@ function go(id: number) {
               <el-select
                 v-model="filters.tags"
 
-                multiple filterable clearable collapse-tags collapse-tags-tooltip
+                multiple clearable filterable collapse-tags collapse-tags-tooltip
                 placeholder="选择标签..."
                 class="w-full"
                 popper-class="custom-select-popper"

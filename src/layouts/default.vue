@@ -42,11 +42,11 @@ const toggleCollapse = () => (isCollapsed.value = !isCollapsed.value)
   <TheHeader @toggle-sidebar="toggleSidebar" @toggle-collapse="toggleCollapse" />
   <div class="flex">
     <TheSidebar :is-open="isSidebarOpen" :collapsed="isCollapsed" :close-sidebar="closeSidebar" />
-    <el-backtop target=".mainRef" :right="100" :bottom="60" />
-    <main class="flex-1">
+    <el-backtop target=".mainRef" :right="60" :bottom="60" z-100 />
+    <main class="flex-1 bg-page">
       <div
         class="mainRef"
-        text="center gray-700 dark:gray-200 overflow-auto"
+        text="center main overflow-auto"
         style="height: calc(100vh - 64px);"
         flex-1 overflow-auto px-6 pt-6
       >
@@ -55,3 +55,9 @@ const toggleCollapse = () => (isCollapsed.value = !isCollapsed.value)
     </main>
   </div>
 </template>
+
+<style>
+input::-webkit-input-placeholder {
+  color: rgba(var(--c-text-faint), 1) !important;
+}
+</style>

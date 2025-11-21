@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useDark, useToggle } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { gameApi } from '~/apis/game'
 import { loadLanguageAsync } from '~/modules/i18n'
@@ -14,10 +13,6 @@ const emit = defineEmits<{
 // i18n
 const { locale } = useI18n()
 
-// dark mode
-const isDark = useDark()
-const toggleDark = useToggle(isDark)
-
 // 切换语言
 async function switchLocale() {
   const newLocale = locale.value === 'en' ? 'zh-CN' : 'en'
@@ -29,11 +24,8 @@ const route = useRoute()
 
 // 判断是否在游戏列表页面
 const showSearch = computed(() => route.name === '/game/')
-const showScraper = computed(() => route.name === '/scrap/')
 const showEdit = computed(() => route.name === '/game/[id]' || route.name === '/game/new/[id]')
-const showUpdateSetting = computed(() => route.name === '/policy')
 const showLogo = computed(() => route.name !== '/')
-const showLibrary = computed(() => route.name === '/library')
 
 // 搜索框内容
 const searchQuery = ref('')
@@ -122,19 +114,6 @@ function downloadGameInfo() {
         </button>
       </template>
 
-      <template v-if="showScraper">
-        <el-select v-model="gameStore.selectScrapResult" placeholder="挂削结果" class="mr-6 w64" clearable>
-          <el-option v-for="s in gameStore.scrapResults" :key="s" :value="s" />
-        </el-select>
-        <!-- 刮削 -->
-        <button icon-btn class="flex items-center" title="刮削" @click="gameStore.showScraper = !gameStore.showScraper">
-          <div i="carbon-download" class="z-20 mr-4 h-6 w-6" />
-        </button>
-        <button icon-btn class="flex items-center" title="自动刮削" @click="gameStore.autoScraper = !gameStore.autoScraper">
-          <div i="carbon-checkmark" class="z-20 mr-4 h-6 w-6" />
-        </button>
-      </template>
-
       <template v-if="showEdit">
         <!-- 编辑 -->
         <button icon-btn class="flex items-center" title="编辑" @click="gameStore.showEdit = !gameStore.showEdit">
@@ -147,26 +126,6 @@ function downloadGameInfo() {
         </button>
       </template>
 
-      <template v-if="showUpdateSetting">
-        <!-- 编辑 -->
-        <button icon-btn class="flex items-center" title="提交" @click="gameStore.showUpdateSetting = !gameStore.showUpdateSetting">
-          <div i="carbon-cloud-upload" class="z-20 mr-4 h-6 w-6" />
-        </button>
-      </template>
-
-      <template v-if="showLibrary">
-        <el-select v-model="gameStore.selectedGameLibrary" placeholder="游戏库" class="mr-6 w64" clearable>
-          <el-option v-for="s in gameStore.gameLibrary" :key="s" :value="s" />
-        </el-select>
-        <el-tooltip
-          effect="light"
-          content="仅显示未刮削"
-          placement="bottom-start"
-        >
-          <el-switch v-model="gameStore.libraryNoScrap" style="--el-switch-off-color: gray" />
-        </el-tooltip>
-      </template>
-
       <!-- 语言切换 -->
       <button
         class="rounded px-2 py-1 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -176,17 +135,18 @@ function downloadGameInfo() {
       </button>
 
       <!-- 主题切换 -->
-      <button
-        class="rounded p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-        @click="toggleDark()"
-      >
-        <div v-if="isDark">
-          🌙
-        </div>
-        <div v-else>
-          ☀️
-        </div>
-      </button>
+      <div class="flex gap-2">
+        <button
+          v-for="t in themeOptions"
+          :key="t.value"
+          class="btn-text text-sm"
+          :class="currentTheme === t.value ? 'text-primary font-bold' : 'text-muted'"
+          @click="toggleTheme(t.value)"
+        >
+          <div :class="t.icon" class="mr-1 inline-block" />
+          {{ t.label }}
+        </button>
+      </div>
 
       <!-- 移动端侧边栏按钮 -->
       <button class="p-2 md:hidden" @click="emit('toggleSidebar')">

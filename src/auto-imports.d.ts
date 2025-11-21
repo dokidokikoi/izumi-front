@@ -26,6 +26,7 @@ declare global {
   const createSharedComposable: typeof import('@vueuse/core')['createSharedComposable']
   const createTemplatePromise: typeof import('@vueuse/core')['createTemplatePromise']
   const createUnrefFn: typeof import('@vueuse/core')['createUnrefFn']
+  const currentTheme: typeof import('./composables/useTheme')['currentTheme']
   const customRef: typeof import('vue')['customRef']
   const debouncedRef: typeof import('@vueuse/core')['debouncedRef']
   const debouncedWatch: typeof import('@vueuse/core')['debouncedWatch']
@@ -100,6 +101,7 @@ declare global {
   const syncRef: typeof import('@vueuse/core')['syncRef']
   const syncRefs: typeof import('@vueuse/core')['syncRefs']
   const templateRef: typeof import('@vueuse/core')['templateRef']
+  const themeOptions: typeof import('./composables/useTheme')['themeOptions']
   const throttledRef: typeof import('@vueuse/core')['throttledRef']
   const throttledWatch: typeof import('@vueuse/core')['throttledWatch']
   const toRaw: typeof import('vue')['toRaw']
@@ -108,6 +110,7 @@ declare global {
   const toRefs: typeof import('vue')['toRefs']
   const toValue: typeof import('vue')['toValue']
   const toggleDark: typeof import('./composables/dark')['toggleDark']
+  const toggleTheme: typeof import('./composables/useTheme')['toggleTheme']
   const triggerRef: typeof import('vue')['triggerRef']
   const tryOnBeforeMount: typeof import('@vueuse/core')['tryOnBeforeMount']
   const tryOnBeforeUnmount: typeof import('@vueuse/core')['tryOnBeforeUnmount']
@@ -117,6 +120,7 @@ declare global {
   const unref: typeof import('vue')['unref']
   const unrefElement: typeof import('@vueuse/core')['unrefElement']
   const until: typeof import('@vueuse/core')['until']
+  const updateTheme: typeof import('./composables/useTheme')['updateTheme']
   const useActiveElement: typeof import('@vueuse/core')['useActiveElement']
   const useAnimate: typeof import('@vueuse/core')['useAnimate']
   const useArrayDifference: typeof import('@vueuse/core')['useArrayDifference']
@@ -315,6 +319,9 @@ declare global {
   // @ts-ignore
   export type { Component, ComponentPublicInstance, ComputedRef, DirectiveBinding, ExtractDefaultPropTypes, ExtractPropTypes, ExtractPublicPropTypes, InjectionKey, PropType, Ref, MaybeRef, MaybeRefOrGetter, VNode, WritableComputedRef } from 'vue'
   import('vue')
+  // @ts-ignore
+  export type { ThemeType } from './composables/useTheme'
+  import('./composables/useTheme')
 }
 
 // for vue template auto import
@@ -342,6 +349,7 @@ declare module 'vue' {
     readonly createSharedComposable: UnwrapRef<typeof import('@vueuse/core')['createSharedComposable']>
     readonly createTemplatePromise: UnwrapRef<typeof import('@vueuse/core')['createTemplatePromise']>
     readonly createUnrefFn: UnwrapRef<typeof import('@vueuse/core')['createUnrefFn']>
+    readonly currentTheme: UnwrapRef<typeof import('./composables/useTheme')['currentTheme']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
@@ -357,7 +365,6 @@ declare module 'vue' {
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectHead: UnwrapRef<typeof import('@unhead/vue')['injectHead']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
-    readonly isDark: UnwrapRef<typeof import('./composables/dark')['isDark']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
@@ -388,7 +395,6 @@ declare module 'vue' {
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
-    readonly preferredDark: UnwrapRef<typeof import('./composables/dark')['preferredDark']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
     readonly reactify: UnwrapRef<typeof import('@vueuse/core')['reactify']>
@@ -413,6 +419,7 @@ declare module 'vue' {
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
     readonly syncRefs: UnwrapRef<typeof import('@vueuse/core')['syncRefs']>
     readonly templateRef: UnwrapRef<typeof import('@vueuse/core')['templateRef']>
+    readonly themeOptions: UnwrapRef<typeof import('./composables/useTheme')['themeOptions']>
     readonly throttledRef: UnwrapRef<typeof import('@vueuse/core')['throttledRef']>
     readonly throttledWatch: UnwrapRef<typeof import('@vueuse/core')['throttledWatch']>
     readonly toRaw: UnwrapRef<typeof import('vue')['toRaw']>
@@ -420,7 +427,7 @@ declare module 'vue' {
     readonly toRef: UnwrapRef<typeof import('vue')['toRef']>
     readonly toRefs: UnwrapRef<typeof import('vue')['toRefs']>
     readonly toValue: UnwrapRef<typeof import('vue')['toValue']>
-    readonly toggleDark: UnwrapRef<typeof import('./composables/dark')['toggleDark']>
+    readonly toggleTheme: UnwrapRef<typeof import('./composables/useTheme')['toggleTheme']>
     readonly triggerRef: UnwrapRef<typeof import('vue')['triggerRef']>
     readonly tryOnBeforeMount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeMount']>
     readonly tryOnBeforeUnmount: UnwrapRef<typeof import('@vueuse/core')['tryOnBeforeUnmount']>
@@ -430,6 +437,7 @@ declare module 'vue' {
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
     readonly unrefElement: UnwrapRef<typeof import('@vueuse/core')['unrefElement']>
     readonly until: UnwrapRef<typeof import('@vueuse/core')['until']>
+    readonly updateTheme: UnwrapRef<typeof import('./composables/useTheme')['updateTheme']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
     readonly useArrayDifference: UnwrapRef<typeof import('@vueuse/core')['useArrayDifference']>

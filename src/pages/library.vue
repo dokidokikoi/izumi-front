@@ -98,10 +98,10 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
     <!-- 1. 顶部工具栏 -->
     <div class="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
       <div>
-        <h1 class="mb-1 text-3xl text-gray-900 font-extrabold dark:text-white">
+        <h1 class="mb-1 text-3xl font-extrabold">
           本地库扫描
         </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p class="text-sm text-muted">
           扫描 NAS 目录，发现未入库的游戏并进行匹配
         </p>
       </div>
@@ -127,8 +127,9 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
         <div class="h-6 flex items-center border-l border-gray-200 px-3 dark:border-gray-700">
           <el-switch
             v-model="gameStore.libraryNoScrap"
+            style="--el-switch-off-color: gray; --el-switch-on-color: rgba(var(--c-primary), 1);"
             inline-prompt
-            active-text="仅看未刮削"
+            active-text="未刮削"
             inactive-text="全部"
           />
         </div>
@@ -155,7 +156,7 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
       <div
         v-for="item in libraries"
         :key="item.path"
-        class="group border border-gray-100 rounded-xl bg-white shadow-sm transition-all duration-300 dark:border-gray-700 dark:bg-gray-800 hover:shadow-md"
+        class="group border border-base rounded-xl bg-card shadow-sm transition-all duration-300 hover:border-strong hover:shadow-md"
       >
         <!-- 卡片主体行 -->
         <div class="flex items-center gap-4 p-4">
@@ -174,7 +175,7 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
               </h3>
               <span class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500 font-medium dark:bg-gray-700 dark:text-gray-300">目录</span>
             </div>
-            <p class="truncate text-xs text-gray-400 font-mono" :title="item.path">
+            <p class="truncate text-left text-xs text-gray-400 font-mono" :title="item.path">
               {{ item.path }}
             </p>
           </div>
@@ -241,6 +242,14 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
 <style scoped>
 .rotate-180 {
   transform: rotate(180deg);
+}
+/* 输入框背景适配 */
+:deep(.el-select__wrapper) {
+  background-color: rgba(var(--c-bg-input), 1);
+  box-shadow: 0 0 0 1px rgba(var(--c-border-strong), 1) inset;
+}
+:deep(.el-switch.is-checked.el-switch__core) {
+  background-color: rgba(var(--c-primary), 1);
 }
 </style>
 
