@@ -257,7 +257,7 @@ onMounted(() => {
                     </template>
                   </el-input>
                   <p class="mt-1 pl-1 text-xs text-muted">
-                    留空则直连，支持 http/socks5 协议。
+                    留空则走环境变量，支持 http/socks5 协议。
                   </p>
                 </div>
 
@@ -306,7 +306,7 @@ onMounted(() => {
     </div>
 
     <!-- 底部悬浮保存栏 (当页面很长时很有用) -->
-    <div class="fixed bottom-6 left-1/2 z-20 -translate-x-1/2">
+    <!-- <div class="fixed bottom-6 left-1/2 z-20 -translate-x-1/2">
       <transition name="el-zoom-in-bottom">
         <div v-if="true" class="flex cursor-pointer items-center gap-4 rounded-full bg-main px-6 py-3 text-white opacity-95 shadow-xl backdrop-blur transition-transform hover:scale-105 dark:bg-white dark:text-black" @click="saveSettings">
           <span class="text-sm font-bold">保存所有更改</span>
@@ -315,7 +315,7 @@ onMounted(() => {
           </el-icon>
         </div>
       </transition>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -352,6 +352,9 @@ onMounted(() => {
 }
 :deep(.el-button) {
   border-color: rgba(var(--c-border), 1);
+}
+:deep(.el-input-group__prepend) {
+  --el-input-border-color: rgba(var(--c-border-strong), 1);
 }
 </style>
 

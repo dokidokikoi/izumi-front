@@ -6,15 +6,10 @@ export const useGameStore = defineStore('game', () => {
   const searchTrigger = ref(false) // 用来触发搜索
   const sortBy = ref('')
   const showAdvanced = ref(false)
-  const showScraper = ref(false)
-  const selectScrapResult = ref('')
-  const scrapResults = ref<string[]>([])
   const showEdit = ref(false)
   const showUpdateSetting = ref(false)
-  const libraryNoScrap = ref(false)
-  const gameLibrary = ref<string[]>([])
-  const selectedGameLibrary = ref<string>('')
-  const autoScraper = ref(false)
+  const gameName = ref('')
+  const showScraper = ref(false)
 
   function setSearchQuery(query: string) {
     searchQuery.value = query
@@ -34,15 +29,10 @@ export const useGameStore = defineStore('game', () => {
     sortBy,
     searchTrigger,
     showAdvanced,
-    showScraper,
-    selectScrapResult,
-    scrapResults,
     showEdit,
     showUpdateSetting,
-    libraryNoScrap,
-    gameLibrary,
-    selectedGameLibrary,
-    autoScraper,
+    gameName,
+    showScraper,
     setSearchQuery,
     triggerSearch,
     setSort,

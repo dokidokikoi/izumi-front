@@ -89,7 +89,7 @@ const playLists = [
         <div class="flex items-center justify-between border-b border-base px-6 py-4">
           <h3 class="flex items-center gap-2 text-lg font-semibold">
             <div i-carbon-list class="text-primary" />
-            热门系列
+            游戏系列
           </h3>
           <button class="text-xs text-primary transition hover:text-hover">
             View All

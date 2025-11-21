@@ -68,6 +68,7 @@ const createTagID = ref(0)
 function getGame() {
   gameApi.get(gameId.value).then((res) => {
     game.value = res.data
+    gameStore.gameName = game.value.name ? game.value.name : ''
     editGame.value = JSON.parse(JSON.stringify(res.data))
     if (res.data.category) {
       createCategoryID.value = res.data.category.id
@@ -714,7 +715,7 @@ function rmImage(img: string) {
   <el-dialog
     v-model="showCharacterModal"
     width="1000px"
-    align-center destroy-on-close
+    destroy-on-close align-center
     class="overflow-hidden rounded-2xl"
   >
     <div v-if="selectedCharacter" class="flex flex-col gap-8 -mx-6 -mb-6 -mt-6 md:flex-row">

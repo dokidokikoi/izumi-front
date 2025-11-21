@@ -57,6 +57,15 @@ function downloadGameInfo() {
     })
   }
 }
+
+function showSakura() {
+  for (const k of ['樱', '桜', 'Sakura', 'サクラ', 'さくら']) {
+    if (gameStore.gameName.includes(k)) {
+      return true
+    }
+  }
+  return false
+}
 </script>
 
 <template>
@@ -64,9 +73,11 @@ function downloadGameInfo() {
     class="relative z-100 flex items-center justify-between bg-white px-6 py-3 shadow-md dark:bg-gray-900"
     un-border="b gray-100 dark:gray-700"
   >
+    <SakuraTree v-if="showSakura()" tree-position="left" />
+
     <!-- 左侧 Logo -->
     <div class="flex items-center gap-2">
-      <button icon-btn @click="emit('toggleCollapse')">
+      <button icon-btn class="z-20" @click="emit('toggleCollapse')">
         <div i="carbon-list" class="z-20 mr-4 h-6 w-6" />
       </button>
 

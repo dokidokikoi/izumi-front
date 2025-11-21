@@ -10,17 +10,16 @@ import {
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { libraryApi, policyApi } from '~/apis/game'
-import { useGameStore } from '~/stores/gameStore' // 假设 store 路径
 
 defineOptions({ name: 'LibraryScanPage' })
 
 const router = useRouter()
-const gameStore = useGameStore()
-const library = ref('/')
 const libraries = ref<PathInfo[]>([])
 const loading = ref(false)
 // 控制折叠展开的状态 map，key为路径
 const expandedItems = ref<Record<string, boolean>>({})
+const gameLibrary = ref<string[]>([])
+const selectedGameLibrary = ref('')
 
 // 获取文件名/文件夹名
 function getName(path: string) {
@@ -44,12 +43,13 @@ function toggleExpand(path: string) {
   expandedItems.value[path] = !expandedItems.value[path]
 }
 
+const libraryNoScrap = ref(false)
 // 获取列表数据
 function list(path: string) {
   if (!path)
     return
   loading.value = true
-  libraryApi.ls(path, gameStore.libraryNoScrap)
+  libraryApi.ls(path, libraryNoScrap.value)
     .then((res) => {
       // 过滤只显示文件夹作为顶级项 (根据原逻辑)
       libraries.value = res.data.list.filter((e: PathInfo) => e.is_dir)
@@ -66,28 +66,26 @@ onMounted(() => {
     const systemConfig = Object.entries(res.data).find(([k]) => k === 'system')
     if (systemConfig) {
       const config = JSON.parse(systemConfig[1] as string)
-      gameStore.gameLibrary = config.game_library || []
+      gameLibrary.value = config.game_library || []
 
       // 设置默认选中的库
-      if (gameStore.gameLibrary.length > 0) {
-        if (!gameStore.selectedGameLibrary || !gameStore.gameLibrary.includes(gameStore.selectedGameLibrary)) {
-          gameStore.selectedGameLibrary = gameStore.gameLibrary[0]
+      if (gameLibrary.value.length > 0) {
+        if (!selectedGameLibrary.value || !gameLibrary.value.includes(selectedGameLibrary.value)) {
+          selectedGameLibrary.value = gameLibrary.value[0]
         }
       }
     }
     // 触发第一次加载
-    if (gameStore.selectedGameLibrary) {
-      library.value = gameStore.selectedGameLibrary
-      list(library.value)
+    if (selectedGameLibrary.value) {
+      list(selectedGameLibrary.value)
     }
   })
 })
 
 // 监听变化
-watch(() => gameStore.libraryNoScrap, () => list(library.value))
-watch(() => gameStore.selectedGameLibrary, (newVal) => {
+watch(() => libraryNoScrap.value, () => list(selectedGameLibrary.value))
+watch(() => selectedGameLibrary.value, (newVal) => {
   if (newVal) {
-    library.value = newVal
     list(newVal)
   }
 })
@@ -109,7 +107,7 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
       <div class="flex items-center gap-3 border border-gray-100 rounded-xl bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <!-- 库选择 -->
         <el-select
-          v-model="gameStore.selectedGameLibrary"
+          v-model="selectedGameLibrary"
           placeholder="选择库路径"
           style="width: 200px"
           class="no-border"
@@ -117,16 +115,16 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
           <template #prefix>
             <el-icon><FolderOpened /></el-icon>
           </template>
-          <el-option v-for="lib in gameStore.gameLibrary" :key="lib" :label="lib" :value="lib" />
+          <el-option v-for="lib in gameLibrary" :key="lib" :label="lib" :value="lib" />
         </el-select>
 
         <!-- 刷新按钮 -->
-        <el-button circle :icon="Refresh" :loading="loading" @click="list(library)" />
+        <el-button circle :icon="Refresh" :loading="loading" @click="list(selectedGameLibrary)" />
 
         <!-- 过滤开关 -->
         <div class="h-6 flex items-center border-l border-gray-200 px-3 dark:border-gray-700">
           <el-switch
-            v-model="gameStore.libraryNoScrap"
+            v-model="libraryNoScrap"
             style="--el-switch-off-color: gray; --el-switch-on-color: rgba(var(--c-primary), 1);"
             inline-prompt
             active-text="未刮削"
@@ -250,6 +248,12 @@ watch(() => gameStore.selectedGameLibrary, (newVal) => {
 }
 :deep(.el-switch.is-checked.el-switch__core) {
   background-color: rgba(var(--c-primary), 1);
+}
+:deep(.el-button) {
+  border-color: rgba(var(--c-border), 1);
+}
+:deep(.el-button:hover) {
+  border-color: rgba(var(--c-border-strong), 1);
 }
 </style>
 
