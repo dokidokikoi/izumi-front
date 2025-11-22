@@ -126,11 +126,6 @@ function showSakura() {
       </template>
 
       <template v-if="showEdit">
-        <!-- 编辑 -->
-        <button icon-btn class="flex items-center" title="编辑" @click="gameStore.showEdit = !gameStore.showEdit">
-          <div i="carbon-edit" class="z-20 mr-4 h-6 w-6" />
-        </button>
-
         <!-- 下载 -->
         <button icon-btn class="flex items-center" title="下载元数据" @click="downloadGameInfo()">
           <div i="carbon-download" class="z-20 mr-4 h-6 w-6" />

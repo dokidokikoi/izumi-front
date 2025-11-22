@@ -1036,6 +1036,7 @@ function rmImage(img: string) {
                       loading="lazy"
                     />
                     <div
+                      v-if="gameStore.showEdit"
                       class="absolute right-1 top-1 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
                       @click="rmImage(img)"
                     >
