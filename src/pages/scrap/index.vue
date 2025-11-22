@@ -11,6 +11,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { scrapApi } from '~/apis/game'
 import { useGameStore } from '~/stores/gameStore'
+import { imageUrl } from '~/utils/image'
 import { useWebSocket } from '~/utils/websocket'
 
 const route = useRoute()
@@ -48,6 +49,8 @@ const currentDisplayGames = computed(() => {
     return []
   return scrapResultsMap.value.get(activeSource.value) || []
 })
+
+const process = ref(0)
 
 // --- 核心逻辑 ---
 
@@ -149,22 +152,26 @@ onMounted(() => {
             // 整理数据
             for (const sourceKey in res.data) {
               const list = res.data[sourceKey]
-              if (list && list.length > 0) {
-                scrapResultsMap.value.set(sourceKey, list)
-                if (!resultSources.value.includes(sourceKey)) {
-                  resultSources.value.push(sourceKey)
-                }
+              scrapResultsMap.value.set(sourceKey, list)
+              if (list && list.length > 0 && !resultSources.value.includes(sourceKey)) {
+                resultSources.value.push(sourceKey)
               }
             }
             // 如果当前没有选中 Tab，默认选第一个有数据的
             if (!activeSource.value && resultSources.value.length > 0) {
               activeSource.value = resultSources.value[0]
             }
+          }).finally(() => {
+            process.value = scrapResultsMap.value.size / (scrapers.length - 1) * 100
           })
         }
         else {
+          if (data.data?.name) {
+            scrapResultsMap.value.set(data.data?.name, [])
+          }
           ElNotification.error({ title: '搜索失败', message: data.data?.name || '未知错误' })
         }
+        process.value = scrapResultsMap.value.size / (scrapers.length - 1) * 100
       }
     }
   }
@@ -174,7 +181,7 @@ onMounted(() => {
 <template>
   <div class="h-[calc(100vh-104px)] flex flex-col bg-overlay">
     <!-- 1. 顶部搜索栏 -->
-    <div class="z-10 border-b border-base bg-card p-4 shadow-sm">
+    <div class="relative z-10 border-b border-base bg-card p-4 shadow-sm">
       <div class="mx-auto max-w-7xl flex items-center gap-4">
         <!-- 搜索源 -->
         <el-select v-model="searchParam.name" class="w-32" placeholder="源">
@@ -220,6 +227,8 @@ onMounted(() => {
           </span>
         </button>
       </div>
+
+      <el-progress :percentage="process" :stroke-width="2" :show-text="false" color="rgba(var(--c-primary), 1)" class="absolute inset-x-0 bottom-0 left-0 z-10" />
     </div>
 
     <!-- 3. 主体内容：结果 + 购物车 -->
@@ -291,7 +300,7 @@ onMounted(() => {
             class="group flex items-center gap-3 border border-base rounded-lg p-2 hover:border-strong"
           >
             <!-- 缩略图 -->
-            <img :src="g.cover" class="h-16 w-12 rounded bg-gray-200 object-cover">
+            <img :src="imageUrl(g.cover)" class="h-16 w-12 rounded bg-gray-200 object-cover">
             <div class="min-w-0 flex-1">
               <div class="truncate text-sm text-main font-bold">
                 {{ g.name }}

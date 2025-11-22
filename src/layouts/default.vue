@@ -42,7 +42,7 @@ const toggleCollapse = () => (isCollapsed.value = !isCollapsed.value)
   <TheHeader @toggle-sidebar="toggleSidebar" @toggle-collapse="toggleCollapse" />
   <div class="flex">
     <TheSidebar :is-open="isSidebarOpen" :collapsed="isCollapsed" :close-sidebar="closeSidebar" />
-    <el-backtop target=".mainRef" :right="60" :bottom="60" z-100 />
+    <el-backtop target=".mainRef" :right="80" :bottom="60" z-100 />
     <main class="flex-1 bg-page">
       <div
         class="mainRef"
