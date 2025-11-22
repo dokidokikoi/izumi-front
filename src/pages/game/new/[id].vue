@@ -4,9 +4,11 @@ import type { Brand, Category, Character, Game, GameInstance, Series, Tag } from
 import {
   Camera,
   Clock,
+  Close,
   Compass,
   Connection,
   Delete,
+  Edit,
   Female,
   Folder,
   FolderOpened,
@@ -21,7 +23,7 @@ import {
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { brandApi, categoryApi, gameApi, seriesApi, tagApi } from '~/apis/game'
-import { genderEnum, languageEnum, platformEnum, roleEnum } from '~/config/enum'
+import { genderEnum, languageEnum, platformEnum, roleEnum, workEnum } from '~/config/enum'
 import { iconMap } from '~/config/icon'
 import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
@@ -42,6 +44,7 @@ const createGameIns = ref<Partial<GameInstance>>({ game_id: Number(gameId.value)
 const gameInsIdx = ref<number>(0)
 const editGameInsIdx = ref<number>(0)
 const editGameCharacterIdx = ref<number>(0)
+const editGameStaffIdx = ref<number>(0)
 
 // --- 字典数据 ---
 const categories = ref<Category[]>([])
@@ -70,6 +73,7 @@ const showAddTag = ref(false)
 const createTag = ref('')
 const createTagID = ref(0)
 const showCharacterEdit = ref(false)
+const showStaffEdit = ref(false)
 
 // --- 初始化逻辑 ---
 function getGame() {
@@ -390,6 +394,18 @@ function addStaff() {
   })
   activeTab.value = '参与成员'
 }
+// 上传成员图片
+function handleStaffImageUploadSuccess(response: any) {
+  if (!editGame.value.staff![editGameStaffIdx.value].images) {
+    editGame.value.staff![editGameStaffIdx.value].images = []
+  }
+  editGame.value.staff![editGameStaffIdx.value].images.push(response.data.path)
+}
+function rmStaffImage(idx: number, image: string) {
+  if (editGame.value.staff![idx].images) {
+    editGame.value.staff![idx].images = editGame.value.staff![idx].images.filter(t => t !== image)
+  }
+}
 
 // --- 角色详情弹窗控制 ---
 const showCharacterModal = ref(false)
@@ -432,7 +448,7 @@ function rmImage(img: string) {
     </div>
 
     <!-- 2. 主要内容区域 (z-index 提升) -->
-    <div class="relative z-10 mx-auto max-w-[100rem] px-4 pt-8 lg:px-8 sm:px-6">
+    <div class="relative mx-auto max-w-[100rem] px-4 pt-8 lg:px-8 sm:px-6">
       <!-- 核心布局：两栏设计 (移除了 items-start 以实现等高拉伸) -->
       <div class="relative flex flex-col gap-8 md:flex-row">
         <!-- [左栏] 粘性侧边栏容器：负责占位和高度拉伸 -->
@@ -511,7 +527,7 @@ function rmImage(img: string) {
                           class="mb-1 mr-1 inline-block flex cursor-pointer items-center whitespace-nowrap border border-gray-600 rounded px-2 py-[1px] text-sm dark:border-white"
                         >
                           {{ brand.name }}
-                          <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="editGame.brands?.splice(index, 1)">
+                          <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.brands?.splice(index, 1)">
                             <div i="carbon-close" class="z-20 h-4 w-4" />
                           </button>
                         </span>
@@ -614,7 +630,7 @@ function rmImage(img: string) {
                         >
                           {{ series.name }}
                         </span>
-                        <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="editGame.series?.splice(index, 1)">
+                        <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.series?.splice(index, 1)">
                           <div i="carbon-close" class="z-20 h-4 w-4" />
                         </button>
                       </div>
@@ -835,10 +851,28 @@ function rmImage(img: string) {
             <!-- 别名显示 -->
             <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <el-icon><Guide /></el-icon>
-              <span v-for="alias in game?.alias" :key="alias" class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">{{ alias }}</span>
-              <el-button v-if="gameStore.showEdit" type="primary" link size="small" @click="showAddAlias = true">
-                + 别名
-              </el-button>
+              <template v-if="!gameStore.showEdit">
+                <span
+                  v-for="alias in game?.alias" :key="alias"
+                  class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
+                >
+                  {{ alias }}
+                </span>
+              </template>
+              <template v-else>
+                <span
+                  v-for="(alias, idx) in editGame?.alias" :key="alias"
+                  class="flex items-center whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
+                >
+                  {{ alias }}
+                  <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.alias?.splice(idx, 1)">
+                    <div i="carbon-close" class="z-20 h-4 w-4" />
+                  </button>
+                </span>
+                <el-button type="primary" link size="small" @click="showAddAlias = true">
+                  + 别名
+                </el-button>
+              </template>
             </div>
             <div v-if="showAddAlias" class="mt-2 flex gap-2">
               <el-input v-model="createAlias" size="small" placeholder="输入别名" @keyup.enter="appendAlias" />
@@ -966,13 +1000,13 @@ function rmImage(img: string) {
                       class="character-container absolute right-1 top-1 z-10 rounded-full transition-all duration-300"
                     >
                       <div
-                        class="z-10 flex cursor-pointer items-center rounded-full bg-hover p1 shadow-md hover:bg-primary"
-                        @click="showCharacterEdit = true"
+                        class="z-10 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md hover:bg-primary"
+                        @click="showCharacterEdit = true; editGameCharacterIdx = idx"
                       >
                         <div i="carbon-edit" class="h-4 w-4" />
                       </div>
                       <div
-                        class="delete-btn absolute top-0 flex cursor-pointer items-center rounded-full bg-hover p1 shadow-md transition-all duration-300 hover:bg-primary"
+                        class="delete-btn absolute top-0 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
                         @click="() => { if (editGame.characters) editGame.characters.splice(idx, 1) }"
                       >
                         <div i="carbon-trash-can" class="h-4 w-4" />
@@ -985,29 +1019,27 @@ function rmImage(img: string) {
               <!-- 图片集 Tab -->
               <div v-show="activeTab === '图片集'" class="animate-fade-in">
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 sm:grid-cols-3">
-                  <div v-if="gameStore.showEdit" class="aspect-video flex flex-col items-center justify-center border-2 border-gray-300 rounded-xl border-dashed bg-gray-50 transition dark:border-gray-700 hover:border-blue-500 dark:bg-gray-800/50">
-                    <el-upload :show-file-list="false" :action="getUploadUrl()" :on-success="handleImageUploadSuccess" class="h-full w-full flex items-center justify-center">
-                      <div class="text-center">
-                        <el-icon :size="28" class="text-gray-400">
-                          <Plus />
-                        </el-icon>
-                        <div class="mt-2 text-xs text-gray-500">
-                          上传图片
-                        </div>
-                      </div>
-                    </el-upload>
+                  <div v-if="gameStore.showEdit" class="aspect-video flex flex-col items-center justify-center rounded-xl bg-gray-50 transition dark:bg-gray-800/50">
+                    <Upload
+                      :action="getUploadUrl()"
+                      class="h-full w-full"
+                      @success="handleImageUploadSuccess"
+                    />
                   </div>
                   <div v-for="(img, i) in (gameStore.showEdit ? editGame.images : game.images)" :key="i" class="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-gray-100">
                     <el-image
                       :src="imageUrl(img)"
-                      class="h-full w-full object-cover transition group-hover:opacity-90"
+                      class="h-full w-full object-cover transition"
                       fit="cover"
                       :preview-src-list="game.images?.map(u => imageUrl(u))"
                       :initial-index="i"
                       loading="lazy"
                     />
-                    <div v-if="gameStore.showEdit" class="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100">
-                      <el-button type="danger" icon="Delete" circle size="small" @click="rmImage(img)" />
+                    <div
+                      class="absolute right-1 top-1 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
+                      @click="rmImage(img)"
+                    >
+                      <div i="carbon-trash-can" class="h-4 w-4" />
                     </div>
                   </div>
                 </div>
@@ -1022,7 +1054,7 @@ function rmImage(img: string) {
                 </div>
                 <div class="space-y-6">
                   <div v-for="(roleGroup, roleName) in { writer: '剧本', painter: '原画', cv: '声优', music: '音乐' }" :key="roleName">
-                    <h4 class="mb-3 border-l-4 border-blue-500 pl-3 text-gray-900 font-bold dark:text-white">
+                    <h4 class="mb-3 border-l-4 border-blue-500 pl-3 text-left text-gray-900 font-bold dark:text-white">
                       {{ roleName }}
                     </h4>
                     <div class="flex flex-wrap gap-3">
@@ -1030,7 +1062,10 @@ function rmImage(img: string) {
                         <div v-if="s.relation.includes(roleName as any)" class="flex items-center gap-2 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-700/50">
                           <el-avatar :size="32" :src="imageUrl(s.cover)" />
                           <span class="text-sm font-medium">{{ s.name }}</span>
-                          <el-button v-if="gameStore.showEdit" size="small" type="danger" link icon="Close" @click="editGame.staff?.splice(idx, 1)" />
+                          <div v-if="gameStore.showEdit">
+                            <el-button size="small" type="primary" link :icon="Edit" @click="showStaffEdit = true; editGameStaffIdx = idx" />
+                            <el-button size="small" type="danger" link :icon="Close" @click="editGame.staff?.splice(idx, 1)" />
+                          </div>
                         </div>
                       </template>
                     </div>
@@ -1044,8 +1079,8 @@ function rmImage(img: string) {
                   <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" class="group flex items-center border border-gray-200 rounded-lg p-4 transition dark:border-gray-700 hover:border-blue-500 hover:shadow-md">
                     <div class="mr-3 rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30"><el-icon :size="20"><Connection /></el-icon></div>
                     <div>
-                      <div class="text-gray-900 font-bold dark:text-white group-hover:text-blue-600">{{ link.name }}</div>
-                      <div class="max-w-[200px] truncate text-xs text-gray-400">{{ link.url }}</div>
+                      <div class="text-left text-gray-900 font-bold dark:text-white group-hover:text-blue-600">{{ link.name }}</div>
+                      <div class="max-w-[200px] truncate text-left text-xs text-gray-400">{{ link.url }}</div>
                     </div>
                   </a>
                 </div>
@@ -1053,9 +1088,9 @@ function rmImage(img: string) {
                   <div v-for="(l, i) in editGame.links" :key="i" class="mb-2 flex gap-2">
                     <el-input v-model="l.name" placeholder="名称" />
                     <el-input v-model="l.url" placeholder="URL" />
-                    <el-button type="danger" icon="Delete" circle @click="editGame.links?.splice(i, 1)" />
+                    <el-button type="danger" :icon="Delete" circle @click="editGame.links?.splice(i, 1)" />
                   </div>
-                  <el-button type="primary" plain icon="Plus" class="mt-2 w-full" @click="() => { if (!editGame.links) editGame.links = []; editGame.links.push({ name: '', url: '', type: '' }) }">
+                  <el-button type="primary" plain :icon="Plus" class="mt-2 w-full" @click="() => { if (!editGame.links) editGame.links = []; editGame.links.push({ name: '', url: '', type: '' }) }">
                     添加链接
                   </el-button>
                 </div>
@@ -1260,13 +1295,30 @@ function rmImage(img: string) {
       <el-row w-full>
         <el-col :span="6">
           <el-row>
-            <el-col>
-              <el-image
+            <el-col class="relative min-h-120px overflow-hidden rounded-xl">
+              <img
                 :src="imageUrl(editGame.characters[editGameCharacterIdx].cover)"
                 alt="角色头像"
-                :preview-src-list="[imageUrl(editGame.characters[editGameCharacterIdx].cover)]"
                 fit="cover"
-              />
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              >
+              <div class="absolute top-0 h-full w-full hover:bg-black/60">
+                <Upload
+                  class="absolute top-0 h-full w-full opacity-0 hover:opacity-100"
+                  :action="getUploadUrl()"
+                  @success="(data) => { editGame.characters[editGameCharacterIdx].cover = data.data.path }"
+                >
+                  <template #content>
+                    <div class="flex flex-col items-center">
+                      <el-icon :size="32" color="#fff">
+                        <Camera />
+                      </el-icon>
+                      <span class="mt-2 text-white font-bold">更换封面</span>
+                      <div i="carbon-trash-can" class="z-20 mt-2 hover:text-red" @click.stop="editGame.characters[editGameCharacterIdx].cover = game.characters[editGameCharacterIdx].cover" />
+                    </div>
+                  </template>
+                </Upload>
+              </div>
             </el-col>
           </el-row>
         </el-col>
@@ -1297,7 +1349,6 @@ function rmImage(img: string) {
               </button>
             </div>
             <el-select
-              v-if="editGame.characters[editGameCharacterIdx].cv"
               v-model="editGame.characters[editGameCharacterIdx].cv.id"
               placeholder="CV"
               :empty-values="[null, undefined, 0]"
@@ -1358,6 +1409,104 @@ function rmImage(img: string) {
                 :src="imageUrl(image)"
                 class="mr-1 h-40 w-34 rounded object-cover"
                 :preview-src-list="editGame.characters[editGameCharacterIdx].images?.map((img) => imageUrl(img))"
+                alt=""
+              />
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+  </el-drawer>
+
+  <!-- 成员详情编辑 -->
+  <el-drawer
+    v-model="showStaffEdit"
+    title="参与成员编辑"
+    direction="rtl"
+  >
+    <div
+      v-if="editGame.staff"
+    >
+      <el-row w-full>
+        <el-col :span="6">
+          <el-row>
+            <el-col class="relative min-h-120px overflow-hidden rounded-xl">
+              <img
+                :src="imageUrl(editGame.staff[editGameStaffIdx].cover)"
+                alt="角色头像"
+                fit="cover"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              >
+              <div class="absolute top-0 h-full w-full hover:bg-black/60">
+                <Upload
+                  class="absolute top-0 h-full w-full opacity-0 hover:opacity-100"
+                  :action="getUploadUrl()"
+                  @success="(data) => { editGame.staff[editGameStaffIdx].cover = data.data.path }"
+                >
+                  <template #content>
+                    <div class="flex flex-col items-center">
+                      <el-icon :size="32" color="#fff">
+                        <Camera />
+                      </el-icon>
+                      <span class="mt-2 text-white font-bold">更换封面</span>
+                      <div i="carbon-trash-can" class="z-20 mt-2 hover:text-red" @click.stop="editGame.staff[editGameStaffIdx].cover = game.staff[editGameStaffIdx].cover" />
+                    </div>
+                  </template>
+                </Upload>
+              </div>
+            </el-col>
+          </el-row>
+        </el-col>
+        <el-col :span="18">
+          <div v-if="editGame.staff[editGameStaffIdx]" ml-4 flex-1>
+            <input v-model="editGame.staff[editGameStaffIdx].name" type="text" class="mb-2 mt-0 w-full flex-1 border rounded p-1" placeholder="角色名">
+            <div flex>
+              <el-select v-model="editGame.staff[editGameStaffIdx].gender" class="mr-2" placeholder="性别" style="width: 120px">
+                <el-option
+                  v-for="(v, k) in genderEnum" :key="k"
+                  :label="v"
+                  :value="k"
+                />
+              </el-select>
+              <el-select v-model="editGame.staff[editGameStaffIdx].relation" multiple placeholder="分工">
+                <el-option
+                  v-for="(v, k) in workEnum" :key="k"
+                  :label="v"
+                  :value="k"
+                />
+              </el-select>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+      <el-input
+        v-model="editGame.staff[editGameStaffIdx].summary"
+        type="textarea"
+        autosize
+        class="mb-4 mt-2"
+        placeholder="成员描述"
+      />
+      <el-row>
+        <el-col>
+          <div v-if="editGame.staff && editGame.staff[editGameStaffIdx]" flex>
+            <Upload
+              :action="getUploadUrl()"
+              class="mr-1 h-40 w-34 bg-gray-50 dark:bg-gray-800/50"
+              @success="handleStaffImageUploadSuccess"
+            />
+            <div
+              v-for="image in editGame.staff[editGameStaffIdx].images"
+              :key="image"
+              relative
+            >
+              <button class="z-10 flex items-center rounded-full bg-red-500 p1" absolute right--1 top--1 @click="rmStaffImage(editGameStaffIdx, image)">
+                <div i="carbon-subtract-large" class="h-3 w-3" />
+              </button>
+              <el-image
+                fit="cover"
+                :src="imageUrl(image)"
+                class="mr-1 h-40 w-34 rounded object-cover"
+                :preview-src-list="editGame.staff[editGameStaffIdx].images?.map((img) => imageUrl(img))"
                 alt=""
               />
             </div>
@@ -1444,7 +1593,7 @@ function rmImage(img: string) {
   height: 95px; /* 容器向下扩展 */
 }
 .character-container:hover .delete-btn {
-  top: 30px;
+  top: 35px;
   opacity: 1;
   transform: translateX(0);
 }
@@ -1479,9 +1628,6 @@ function rmImage(img: string) {
 }
 :deep(.el-image-viewer__wrapper) {
   z-index: 9999999 !important;
-}
-:deep(.el-image-viewer__mask) {
-  z-index: 9999998 !important;
 }
 </style>
 

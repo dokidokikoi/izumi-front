@@ -11,7 +11,6 @@ declare module 'vue' {
     Card: typeof import('./components/Card.vue')['default']
     GameCard: typeof import('./components/GameCard.vue')['default']
     GameMergeDialog: typeof import('./components/GameMergeDialog.vue')['default']
-    ImageLightBox: typeof import('./components/ImageLightBox.vue')['default']
     README: typeof import('./components/README.md')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
