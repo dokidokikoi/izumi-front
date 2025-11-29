@@ -1159,7 +1159,7 @@ function rmImage(img: string) {
   <el-dialog
     v-model="showCharacterModal"
     width="1000px"
-    destroy-on-close align-center
+    align-center destroy-on-close
     class="overflow-hidden rounded-2xl"
   >
     <div v-if="selectedCharacter" class="flex flex-col gap-8 -mx-6 -mb-6 -mt-6 md:flex-row">

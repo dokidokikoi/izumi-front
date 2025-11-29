@@ -153,7 +153,7 @@ onMounted(() => {
 })
 
 function go(id: number) {
-  router.push(`/game/new/${id}`)
+  router.push(`/games/new/${id}`)
 }
 </script>
 

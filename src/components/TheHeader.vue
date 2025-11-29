@@ -23,8 +23,8 @@ async function switchLocale() {
 const route = useRoute()
 
 // 判断是否在游戏列表页面
-const showSearch = computed(() => route.name === '/game/')
-const showEdit = computed(() => route.name === '/game/[id]' || route.name === '/game/new/[id]')
+const showSearch = computed(() => route.name === '/games/')
+const showEdit = computed(() => route.name === '/games/[id]' || route.name === '/games/new/[id]' || route.name === '/games/')
 const showLogo = computed(() => route.name !== '/')
 
 // 搜索框内容
@@ -51,7 +51,12 @@ function selectSort(option: string) {
 
 function downloadGameInfo() {
   const id = route.params?.id
-  if (typeof id === 'string') {
+  if (!id) {
+    gameApi.downloadAll().then(() => {
+      ElMessage.success('succeeded')
+    })
+  }
+  else if (typeof id === 'string') {
     gameApi.download(Number(id)).then(() => {
       ElMessage.success('succeeded')
     })

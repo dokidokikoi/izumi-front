@@ -20,9 +20,9 @@ declare module 'vue-router/auto-routes' {
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/[...all]': RouteRecordInfo<'/[...all]', '/:all(.*)', { all: ParamValue<true> }, { all: ParamValue<false> }>,
-    '/game/': RouteRecordInfo<'/game/', '/game', Record<never, never>, Record<never, never>>,
-    '/game/[id]': RouteRecordInfo<'/game/[id]', '/game/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
-    '/game/new/[id]': RouteRecordInfo<'/game/new/[id]', '/game/new/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/games/': RouteRecordInfo<'/games/', '/games', Record<never, never>, Record<never, never>>,
+    '/games/[id]': RouteRecordInfo<'/games/[id]', '/games/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/games/new/[id]': RouteRecordInfo<'/games/new/[id]', '/games/new/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     '/library': RouteRecordInfo<'/library', '/library', Record<never, never>, Record<never, never>>,
     '/policy': RouteRecordInfo<'/policy', '/policy', Record<never, never>, Record<never, never>>,
     '/README': RouteRecordInfo<'/README', '/README', Record<never, never>, Record<never, never>>,
