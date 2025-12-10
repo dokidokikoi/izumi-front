@@ -21,13 +21,6 @@ const stats = ref([
   { label: '活跃标签', value: 0, sub: '已关联游戏', icon: 'i-carbon-bookmark-filled', color: 'text-error', bgColor: 'bg-error' },
 ])
 
-gameApi.panel().then((res) => {
-  stats.value[0].value = res.data.games
-  stats.value[1].value = res.data.local_games
-  stats.value[2].value = res.data.tags
-  stats.value[3].value = res.data.used_tags
-})
-
 const seriesList = ref<Series[]>([])
 const pageSize = ref(10)
 function getSeries() {
@@ -39,7 +32,16 @@ function toggleSeries() {
   pageSize.value = pageSize.value === 0 ? 10 : 0
   getSeries()
 }
-getSeries()
+
+onMounted(() => {
+  gameApi.panel().then((res) => {
+    stats.value[0].value = res.data.games
+    stats.value[1].value = res.data.local_games
+    stats.value[2].value = res.data.tags
+    stats.value[3].value = res.data.used_tags
+  })
+  getSeries()
+})
 
 const playLists = [
   { name: '周末必玩', status: 'Active', date: '2h ago' },

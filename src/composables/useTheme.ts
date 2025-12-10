@@ -53,7 +53,9 @@ export function updateTheme() {
   }
 }
 
-// 监听变化 (确保在应用启动或 storage 变化时生效)
-watchEffect(() => {
-  updateTheme()
+onMounted(() => {
+  // 监听变化 (确保在应用启动或 storage 变化时生效)
+  watchEffect(() => {
+    updateTheme()
+  })
 })

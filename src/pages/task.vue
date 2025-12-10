@@ -22,13 +22,15 @@ const filteredTasks = computed(() => {
   return taskList.value.filter(t => t.type === activeTab.value)
 })
 
-taskApi.list(req.value).then((res) => {
-  taskList.value = res.data.list
-  for (const task of taskList.value) {
-    if (task.state === 'canceled' || task.state === 'failed' || task.state === 'done') {
-      task.progress = 100
+onMounted(() => {
+  taskApi.list(req.value).then((res) => {
+    taskList.value = res.data.list
+    for (const task of taskList.value) {
+      if (task.state === 'canceled' || task.state === 'failed' || task.state === 'done') {
+        task.progress = 100
+      }
     }
-  }
+  })
 })
 
 // --- 4. 视觉辅助函数 ---
