@@ -1008,9 +1008,7 @@ function rmImage(img: string) {
                           <Male />
                         </el-icon>
                       </div>
-                      <p class="line-clamp-2 h-8 text-xs text-gray-500 dark:text-gray-400">
-                        {{ char.summary || '暂无描述' }}
-                      </p>
+                      <p class="line-clamp-2 h-8 text-xs text-gray-500 dark:text-gray-400" v-html="char.summary || '暂无描述'" />
                     </div>
 
                     <div
@@ -1219,9 +1217,7 @@ function rmImage(img: string) {
           </div>
         </div>
         <!-- 简介 -->
-        <div class="mb-8 border border-gray-100 rounded-xl bg-gray-50 p-4 text-sm text-gray-600 leading-relaxed prose dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:prose-invert">
-          {{ selectedCharacter.summary || '暂无角色简介...' }}
-        </div>
+        <div class="mb-8 border border-gray-100 rounded-xl bg-gray-50 p-4 text-sm text-gray-600 leading-relaxed prose dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:prose-invert" v-html="selectedCharacter.summary || '暂无角色简介...'" />
         <!-- 属性网格 -->
         <div class="grid grid-cols-2 mb-8 gap-4 sm:grid-cols-3">
           <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
