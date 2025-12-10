@@ -1,28 +1,53 @@
 <script setup lang="ts">
-import type { UploadInstance, UploadRawFile } from 'element-plus'
-import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
-import { Clock, Compass, Connection, Folder, FolderOpened, Guide, Monitor, OfficeBuilding, Plus } from '@element-plus/icons-vue'
-import { genFileId } from 'element-plus'
-import { brandApi, categoryApi, gameApi, personApi, seriesApi, tagApi } from '~/apis/game'
+// 导入你的类型和API
+import type { Brand, Category, Character, Game, GameInstance, Series, Tag } from '~/types'
+import {
+  Camera,
+  Clock,
+  Close,
+  Compass,
+  Connection,
+  Delete,
+  Edit,
+  Female,
+  Folder,
+  FolderOpened,
+  Guide,
+  Male,
+  Monitor,
+  More,
+  OfficeBuilding,
+  Plus,
+  Star,
+} from '@element-plus/icons-vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { brandApi, categoryApi, gameApi, seriesApi, tagApi } from '~/apis/game'
 import { genderEnum, languageEnum, platformEnum, roleEnum, workEnum } from '~/config/enum'
 import { iconMap } from '~/config/icon'
-
+import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
 
+const route = useRoute()
+const router = useRouter()
+const gameStore = useGameStore()
 const { t } = useI18n()
 
-// 模拟接口数据，实际应从 API 获取
-const router = useRouter()
-const route = useRoute()
+// --- 核心数据 ---
 const gameId = computed(() => (route.params as { id: number }).id)
-
 const game = ref<Partial<Game>>({})
 const gameIns = ref<GameInstance[]>([])
+
+// --- 编辑状态数据 ---
 const editGame = ref<Partial<Game>>({})
 const editGameIns = ref<GameInstance[]>([])
-const createGameIns = ref<Partial<GameInstance>>({
-  game_id: Number(gameId.value),
-})
+const createGameIns = ref<Partial<GameInstance>>({ game_id: Number(gameId.value) })
+const gameInsIdx = ref<number>(0)
+const editGameInsIdx = ref<number>(0)
+const editGameCharacterIdx = ref<number>(0)
+const editGameStaffIdx = ref<number>(0)
+
+// --- 字典数据 ---
 const categories = ref<Category[]>([])
 const series = ref<Series[]>([])
 const tags = ref<Tag[]>([])
@@ -30,13 +55,32 @@ const brands = ref<Brand[]>([])
 const languages = ref<string[]>([])
 const platforms = ref<string[]>([])
 
-const gameStore = useGameStore()
+// --- UI 状态控制 ---
+const activeTab = ref('角色')
+const tabs = ['角色', '图片集', '参与成员', '相关链接', '其他信息']
+const isStoryExpanded = ref(false)
+const isTagsExpanded = ref(false)
+const TAG_LIMIT = 50
+const showUpdate = ref(false)
+const showAddGameIns = ref(false)
 
+// --- 辅助变量 ---
 const createCategoryID = ref<number>(0)
 const createBrandID = ref(0)
+const showAddAlias = ref(false)
+const createAlias = ref('')
+const createSeriesID = ref(0)
+const showAddTag = ref(false)
+const createTag = ref('')
+const createTagID = ref(0)
+const showCharacterEdit = ref(false)
+const showStaffEdit = ref(false)
+
+// --- 初始化逻辑 ---
 function getGame() {
   gameApi.get(gameId.value).then((res) => {
     game.value = res.data
+    gameStore.gameName = game.value.name ? game.value.name : ''
     editGame.value = JSON.parse(JSON.stringify(res.data))
     if (res.data.category) {
       createCategoryID.value = res.data.category.id
@@ -48,33 +92,31 @@ function getIns() {
   gameApi.getIns(gameId.value).then((res) => {
     gameIns.value = res.data
     editGameIns.value = JSON.parse(JSON.stringify(res.data))
-
     platforms.value = []
     languages.value = []
     for (const ins of res.data) {
       if (ins.platform) {
         for (const plat of ins.platform) {
-          if (!platforms.value.find(p => p === plat)) {
+          if (!platforms.value.find(p => p === plat))
             platforms.value.push(plat)
-          }
         }
       }
       if (ins.language) {
         for (const lang of ins.language) {
-          if (!languages.value.find(l => l === lang)) {
+          if (!languages.value.find(l => l === lang))
             languages.value.push(lang)
-          }
         }
       }
     }
   })
 }
 
-const gameInsIdx = ref<number>(0)
-const editGameInsIdx = ref<number>(0)
-const showAddGameIns = ref(false)
+function getBrands() {
+  return brandApi.list().then((res) => {
+    brands.value = res.data.list
+  })
+}
 
-// 初始化
 function getCategories() {
   return categoryApi.list().then((res) => {
     categories.value = res.data
@@ -90,27 +132,26 @@ function getTags() {
     tags.value = res.data.list
   })
 }
-function getBrands() {
-  return brandApi.list().then((res) => {
-    brands.value = res.data.list
-  })
+
+function initData() {
+  getCategories()
+  getSeries()
+  getTags()
+  getBrands()
 }
 
 onMounted(() => {
   getGame()
   getIns()
-  getTags()
-  getCategories()
-  getSeries()
-  getBrands()
+  initData()
 })
 
-// tabs
-const tabs = ['故事', '角色', '图片集', '参与成员', '相关链接', '其他信息']
-const activeTab = ref('故事')
+function goto(path: string) {
+  const { href } = router.resolve(path)
+  window.open(href, '_blank')
+}
 
-// 监听 showEdit，执行游戏更新
-const showUpdate = ref(false)
+// --- 更新逻辑 ---
 async function updateGame() {
   for (const ins of editGameIns.value) {
     await gameApi.updateGameIns(ins)
@@ -118,18 +159,12 @@ async function updateGame() {
   getIns()
   gameApi.update(editGame.value).then(() => {
     showUpdate.value = false
-    game.value = editGame.value
+    game.value = JSON.parse(JSON.stringify(editGame.value))
     getGame()
+  }).finally(() => {
+    gameStore.showEdit = false
   })
 }
-watch(
-  () => gameStore.showEdit,
-  (newVal) => {
-    if (!newVal) {
-      showUpdate.value = true
-    }
-  },
-)
 
 function addGameIns() {
   gameApi.createGameIns(createGameIns.value).then(() => {
@@ -139,19 +174,16 @@ function addGameIns() {
   })
 }
 
-// 别名
-const showAddAlias = ref(false)
-const createAlias = ref('')
+// --- 标签/品牌/系列/别名 操作逻辑 ---
 function appendAlias() {
-  if (!editGame.value.alias) {
+  if (!editGame.value.alias)
     editGame.value.alias = []
+
+  if (createAlias.value) {
+    editGame.value.alias.push(createAlias.value)
+    createAlias.value = ''
+    showAddAlias.value = false
   }
-  editGame.value.alias?.push(createAlias.value)
-  createAlias.value = ''
-  showAddAlias.value = false
-}
-function removeAlias(index: number) {
-  editGame.value.alias?.splice(index, 1)
 }
 
 // 游戏发行商
@@ -175,25 +207,18 @@ function appendBrand(d: string | undefined) {
   })
 }
 // 监听 createBrandID
-watch(
-  () => createBrandID.value,
-  (newVal) => {
-    if (newVal) {
-      if (!editGame.value.brands) {
-        editGame.value.brands = []
-      }
-      if (editGame.value.brands.find(b => b.id === newVal)) {
-        createBrandID.value = 0
-        return
-      }
+watch(createBrandID, (newVal) => {
+  if (newVal) {
+    if (!editGame.value.brands)
+      editGame.value.brands = []
+    if (!editGame.value.brands.find(b => b.id === newVal)) {
       const b = brands.value.find(b => b.id === newVal)
-      if (b) {
+      if (b)
         editGame.value.brands.push(b)
-        createBrandID.value = 0
-      }
     }
-  },
-)
+    createBrandID.value = 0
+  }
+})
 
 // 分类
 const createCategory = ref<string>('')
@@ -222,14 +247,14 @@ watch(
     }
   },
 )
+watch(createCategoryID, (newVal) => {
+  if (newVal)
+    editGame.value.category = categories.value.find(c => c.id === newVal)
+})
 
 // 游戏系列
 const createSeries = ref<string>('')
 const showAddSeries = ref(false)
-const createSeriesID = ref(0)
-function removeSeries(index: number) {
-  editGame.value.series?.splice(index, 1)
-}
 function appendSeries(s: string | undefined) {
   if (!s) {
     return
@@ -248,83 +273,61 @@ function appendSeries(s: string | undefined) {
   })
 }
 // 监听 createSeriesID
-watch(
-  () => createSeriesID.value,
-  (newVal) => {
-    if (newVal) {
-      if (!editGame.value.series) {
-        editGame.value.series = []
-      }
-      const s = series.value.find(t => t.id === newVal)
-      if (s) {
-        editGame.value.series?.push(s)
-        createSeriesID.value = 0
-      }
+watch(createSeriesID, (newVal) => {
+  if (newVal) {
+    if (!editGame.value.series)
+      editGame.value.series = []
+    if (!editGame.value.series.find(s => s.id === newVal)) {
+      const s = series.value.find(item => item.id === newVal)
+      if (s)
+        editGame.value.series.push(s)
     }
-  },
-)
-
-// 游戏标签
-const createTag = ref<string>('')
-const showAddTag = ref(false)
-const createTagID = ref(0)
-function removeTag(tag: string) {
-  if (editGame.value.tags?.find(t => t.name === tag)) {
-    editGame.value.tags = editGame.value.tags?.filter(t => t.name !== tag)
+    createSeriesID.value = 0
   }
+})
+
+function removeTag(tagName: string) {
+  editGame.value.tags = editGame.value.tags?.filter(t => t.name !== tagName)
 }
+
 function appendTag(t: string | undefined) {
   if (!t) {
-    return
-  }
-  if (!editGame.value.tags) {
-    editGame.value.tags = []
-  }
-  else if (editGame.value.tags.find(tag => tag.name === t)) {
-    return
-  }
-  const tt = tags.value.find(tag => tag.name === t)
-  if (tt) {
-    editGame.value.tags.push(tt)
+    showAddTag.value = false
     return
   }
   tagApi.create(t).then((res) => {
-    getTags().then(() => {
-      tags.value.forEach((t) => {
-        if (t.id === res.data) {
-          editGame.value.tags?.push(t)
-        }
-      })
+    tagApi.list().then((r) => {
+      tags.value = r.data.list
+      const tag = tags.value.find(item => item.id === res.data)
+      if (tag) {
+        if (!editGame.value.tags)
+          editGame.value.tags = []
+        editGame.value.tags.push(tag)
+      }
     })
+  }).finally(() => {
+    showAddTag.value = false
   })
 }
-// 监听 createTagID
-watch(
-  () => createTagID.value,
-  (newVal) => {
-    if (newVal) {
-      if (!editGame.value.tags) {
-        editGame.value.tags = []
-      }
-      if (editGame.value.tags.find(t => t.id === newVal)) {
-        createTagID.value = 0
-        return
-      }
-      const t = tags.value.find(t => t.id === newVal)
-      if (t) {
-        editGame.value.tags?.push(t)
-        createTagID.value = 0
-      }
-    }
-  },
-)
 
+watch(createTagID, (newVal) => {
+  if (newVal) {
+    if (!editGame.value.tags)
+      editGame.value.tags = []
+    if (!editGame.value.tags.find(t => t.id === newVal)) {
+      const t = tags.value.find(item => item.id === newVal)
+      if (t)
+        editGame.value.tags.push(t)
+    }
+    createTagID.value = 0
+  }
+})
+
+// --- 角色/Staff 操作逻辑 ---
 // 游戏角色
 const showCharacterAddAlias = ref(false)
 const createCharacterAlias = ref('')
 // const searchCharacterLoading = ref(false)
-const characters = ref<Character[]>([])
-const searchCharacterID = ref(0)
 function removeCharacterAlias(idx: number, alias: string) {
   if (!editGame.value.characters || !editGame.value.characters[idx].alias) {
     return
@@ -343,9 +346,8 @@ function appendCharacterAlias(idx: number, alias: string) {
   showCharacterAddAlias.value = false
 }
 function addCharacter() {
-  if (!editGame.value.characters) {
+  if (!editGame.value.characters)
     editGame.value.characters = []
-  }
   editGame.value.characters.unshift({
     id: 0,
     name: '',
@@ -356,81 +358,31 @@ function addCharacter() {
     summary: '',
     gender: '',
     relation: '',
-    cv: {
-      id: 0,
-      name: '',
-      alias: [],
-      cover: '',
-      images: [],
-      tags: [],
-      summary: '',
-      gender: '',
-      relation: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
+    cv: { id: 0, name: '', alias: [], cover: '', images: [], tags: [], summary: '', gender: '', relation: [], created_at: '', updated_at: '' },
     games: [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: '',
+    updated_at: '',
     weight: 1,
     personal_info: {},
   })
+  activeTab.value = '角色'
 }
-// function searchCharacter(keyword: string) {
-//   searchCharacterLoading.value = true
-//   characters.value = []
-//   if (keyword === '') {
-//     searchCharacterLoading.value = false
-//     return
-//   }
-
-//   characterApi.search({
-//     keyword,
-//   }).then((res) => {
-//     characters.value = res.data.list
-//     searchCharacterLoading.value = false
-//   })
-// }
-// 监听 searchCharacterID
-watch(
-  () => searchCharacterID.value,
-  (newVal) => {
-    if (newVal) {
-      if (!editGame.value.characters) {
-        editGame.value.characters = []
-      }
-      if (!editGame.value.characters.find(t => t.id === newVal)) {
-        const c = characters.value.find(t => t.id === newVal)
-        if (c) {
-          if (c.cv && c.cv.id) {
-            if (!editGame.value.staff) {
-              editGame.value.staff = []
-            }
-            if (!editGame.value.staff.find(t => t.id === c.cv?.id)) {
-              personApi.get(c.cv?.id).then((res) => {
-                if (!res.data.relation) {
-                  res.data.relation = []
-                }
-                res.data.relation.push('cv')
-                editGame.value.staff?.push(res.data)
-              })
-            }
-          }
-          editGame.value.characters.unshift(c)
-        }
-      }
-    }
-  },
-)
-
-// 游戏参与人员
-const searchPersonID = ref(0)
-// const searchPersonLoading = ref(false)
-const persons = ref<Staff[]>([])
-function addStaff() {
-  if (!editGame.value.staff) {
-    editGame.value.staff = []
+// 上传角色图片
+function handleCharacterImageUploadSuccess(response: any) {
+  if (!editGame.value.characters![editGameCharacterIdx.value].images) {
+    editGame.value.characters![editGameCharacterIdx.value].images = []
   }
+  editGame.value.characters![editGameCharacterIdx.value].images.push(response.data.path)
+}
+function rmCharacterImage(idx: number, image: string) {
+  if (editGame.value.characters![idx].images) {
+    editGame.value.characters![idx].images = editGame.value.characters![idx].images.filter(t => t !== image)
+  }
+}
+
+function addStaff() {
+  if (!editGame.value.staff)
+    editGame.value.staff = []
   editGame.value.staff.unshift({
     id: 0,
     name: '',
@@ -441,1177 +393,1260 @@ function addStaff() {
     summary: '',
     gender: '',
     relation: [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: '',
+    updated_at: '',
   })
+  activeTab.value = '参与成员'
 }
-function createStaff(index: number) {
-  if (!editGame.value.staff) {
-    return
+// 上传成员图片
+function handleStaffImageUploadSuccess(response: any) {
+  if (!editGame.value.staff![editGameStaffIdx.value].images) {
+    editGame.value.staff![editGameStaffIdx.value].images = []
   }
-  personApi.upsert(editGame.value.staff[index]).then((res) => {
-    if (!editGame.value.staff) {
-      return
-    }
-    editGame.value.staff[index].id = res.data
-  })
+  editGame.value.staff![editGameStaffIdx.value].images.push(response.data.path)
 }
-// function searchPerson(keyword: string) {
-//   searchPersonLoading.value = true
-//   persons.value = []
-//   if (keyword === '') {
-//     searchPersonLoading.value = false
-//     return
-//   }
-
-//   personApi.search({
-//     keyword,
-//   }).then((res) => {
-//     persons.value = res.data.list
-//     searchPersonLoading.value = false
-//   })
-// }
-// 监听 searchPersonID
-watch(
-  () => searchPersonID.value,
-  (newVal) => {
-    if (newVal) {
-      if (!editGame.value.staff) {
-        editGame.value.staff = []
-      }
-      if (!editGame.value.staff.find(t => t.id === newVal)) {
-        const p = persons.value.find(t => t.id === newVal)
-        if (p) {
-          editGame.value.staff.unshift(p)
-        }
-      }
-    }
-  },
-)
-
-// 游戏相关链接
-function appendLink() {
-  if (!editGame.value.links) {
-    editGame.value.links = []
+function rmStaffImage(idx: number, image: string) {
+  if (editGame.value.staff![idx].images) {
+    editGame.value.staff![idx].images = editGame.value.staff![idx].images.filter(t => t !== image)
   }
-  editGame.value.links.push({
-    name: '',
-    url: '',
-    type: '',
-  })
-}
-function removeLink(index: number) {
-  editGame.value.links?.splice(index, 1)
 }
 
-// 上传角色封面
-const characterCoverUploadRefs = ref<Record<number, UploadInstance | null>>({})
+// --- 角色详情弹窗控制 ---
+const showCharacterModal = ref(false)
+const selectedCharacter = ref<Character | null>(null)
+function openCharacterDetail(char: Character) {
+  selectedCharacter.value = char
+  showCharacterModal.value = true
+}
+
+// --- 上传相关逻辑 ---
 function getUploadUrl() {
   const prefix = import.meta.env.VITE_API_BASE || window.location.origin.concat('/api')
   return prefix.concat('/file/upload')
 }
-function handleCharacterCoverExceed(idx: number, files: File[]) {
-  const uploadRef = characterCoverUploadRefs.value[idx]
-  if (!uploadRef)
-    return
-  uploadRef.clearFiles()
-  const file = files[0] as UploadRawFile
-  file.uid = genFileId()
-  uploadRef.handleStart(file)
-  uploadRef.submit()
-}
-function handleCharacterCoverUploadSuccess(idx: number) {
-  return (response: any) => {
-    editGame.value.characters![idx].cover = response.data.path
-  }
-}
-function handleCharacterCoverBeforeRemove(idx: number) {
-  return () => {
-    editGame.value.characters![idx].cover = ''
-  }
-}
 
-// 上传角色图片
-const characterImageUploadRefs = ref<Record<number, UploadInstance | null>>({})
-function handleCharacterImageUploadSuccess(idx: number) {
-  return (response: any) => {
-    if (!editGame.value.characters![idx].images) {
-      editGame.value.characters![idx].images = []
-    }
-    editGame.value.characters![idx].images.push(response.data.path)
-  }
-}
-function rmCharacterImage(idx: number, image: string) {
-  if (editGame.value.characters![idx].images) {
-    editGame.value.characters![idx].images = editGame.value.characters![idx].images.filter(t => t !== image)
-  }
-}
-
-// 上传游戏图片
-const imageUploadRef = ref<UploadInstance>()
-function handleImageUploadSuccess(response: any) {
+function handleImageUploadSuccess(res: any) {
   if (!editGame.value.images) {
     editGame.value.images = []
   }
-  editGame.value.images.unshift(response.data.path)
+  editGame.value.images.unshift(res.data.path)
 }
-function rmImage(image: string) {
-  editGame.value.images = editGame.value.images?.filter(t => t !== image)
+
+function rmImage(img: string) {
+  editGame.value.images = editGame.value.images?.filter(t => t !== img)
 }
 </script>
 
 <template>
-  <div text-left>
-    <h1 v-if="!gameStore.showEdit" class="mb6 text-4xl font-bold">
-      {{ game?.name }}
-    </h1>
-    <div v-if="gameStore.showEdit" class="mb6 text-4xl font-bold">
-      <TheInput v-model="editGame.name" w-full text-left placeholder="请输入游戏名称" />
+  <!-- 全局容器：相对定位，用于放置背景 -->
+  <div class="relative min-h-screen w-full pb-20 text-gray-800 dark:text-gray-100">
+    <!-- 1. 沉浸式背景层 (Hero Background) -->
+    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <!-- 背景图：高斯模糊 + 暗色遮罩 -->
+      <img
+        v-if="game?.cover"
+        :src="imageUrl(game.cover)"
+        class="h-full w-full scale-110 object-cover opacity-60 blur-3xl dark:opacity-40"
+      >
+      <div class="absolute inset-0 from-white/30 via-white/80 to-white bg-gradient-to-b dark:from-gray-900/30 dark:via-gray-900/80 dark:to-gray-900" />
     </div>
-    <div>
-      <!-- 顶部元数据 -->
-      <div class="flex flex-col gap-6 md:flex-row">
-        <div class="w-64 flex-shrink-0">
-          <img :src="imageUrl(game?.cover)" alt="cover" class="w-full rounded-xl object-cover shadow-lg">
-        </div>
-        <div class="flex-1 space-y-3">
-          <div flex items-start>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Guide color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">别名：</span>
-            </div>
-            <div flex-1>
-              <template v-if="!gameStore.showEdit">
-                <div v-for="alias in game?.alias" :key="alias">
-                  <span text-lg underline>{{ alias }}</span>
+
+    <!-- 2. 主要内容区域 (z-index 提升) -->
+    <div class="relative mx-auto max-w-[100rem] px-4 pt-8 lg:px-8 sm:px-6">
+      <!-- 核心布局：两栏设计 (移除了 items-start 以实现等高拉伸) -->
+      <div class="relative flex flex-col gap-8 md:flex-row">
+        <!-- [左栏] 粘性侧边栏容器：负责占位和高度拉伸 -->
+        <div class="relative w-full flex-shrink-0 md:w-80">
+          <!-- 视觉分割线 (可选) -->
+          <div class="absolute bottom-0 top-0 hidden w-px bg-gray-200/50 -right-4 md:block dark:bg-gray-800/50" />
+
+          <!-- 真正的内容层：负责吸顶 (Sticky) -->
+          <div class="md:sticky md:top-24 space-y-6">
+            <!-- 封面图 -->
+            <div class="group relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-gray-200 shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/10">
+              <img
+                v-if="!gameStore.showEdit"
+                :src="imageUrl(game?.cover)"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              >
+              <!-- 编辑模式：更换封面 -->
+              <template v-else>
+                <img
+                  :src="imageUrl(editGame?.cover)"
+                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                >
+                <div class="absolute inset-0 flex flex-col cursor-pointer items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                  <!-- <input id="cover-uploader" type="file" accept=".jpg, .jpeg, .png" style="display: none;" /> -->
+                  <Upload class="absolute top-0 h-full w-full" :action="getUploadUrl()" @success="(data) => { editGame.cover = data.data.path }">
+                    <template #content>
+                      <div class="flex flex-col items-center">
+                        <el-icon :size="32" color="#fff">
+                          <Camera />
+                        </el-icon>
+                        <span class="mt-2 text-white font-bold">更换封面</span>
+                        <div i="carbon-trash-can" class="z-20 mt-2 hover:text-red" @click.stop="editGame.cover = game.cover" />
+                      </div>
+                    </template>
+                  </Upload>
                 </div>
               </template>
-              <div v-else flex flex-wrap items-center>
-                <template v-for="(alias, index) in editGame.alias" :key="index">
-                  <p
-                    class="mb-1 mr-2 mt-1 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
-                  >
-                    {{ alias }}
-                    <button class="ml-1 flex flex-1 cursor-pointer items-center rounded-full hover:bg-gray-800" @click="removeAlias(index)">
-                      <div i="carbon-close" class="z-20 h-4 w-4" />
-                    </button>
-                  </p>
-                </template>
-                <input
-                  v-if="showAddAlias"
-                  v-model="createAlias"
-                  type="text"
-                  class="mt-0 flex-1 border rounded pl-2"
-                  placeholder="输入游戏别名"
-                  @keydown.enter="appendAlias"
-                >
-                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddAlias = true">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
             </div>
-          </div>
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <OfficeBuilding color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">品牌：</span>
-            </div>
-            <div flex-1>
-              <div v-if="!gameStore.showEdit">
-                <span
-                  v-for="brand in game.brands"
-                  :key="brand.id"
-                  cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
-                  @click="router.push(`/game?brand=${brand.id}`)"
-                >{{ brand.name }} &nbsp;&nbsp;</span>
-              </div>
-              <div v-else flex flex-1 flex-wrap items-center>
-                <template v-for="(brand, index) in editGame.brands" :key="index">
-                  <span
-                    class="mb-1 mr-1 inline-block flex cursor-pointer items-center whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white"
-                  >
-                    {{ brand.name }}
-                    <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="editGame.brands?.splice(index, 1)">
-                      <div i="carbon-close" class="z-20 h-4 w-4" />
-                    </button>
-                  </span>
-                </template>
-                <el-select v-model="createBrandID" placeholder="游戏品牌" :empty-values="[null, undefined, 0]" mr-2 w-64>
-                  <el-option
-                    v-for="brand in brands" :key="brand.id"
-                    :value="brand.id"
-                    :label="brand.name"
-                  />
-                </el-select>
-                <input
-                  v-if="showAddBrand"
-                  v-model="createBrand"
-                  type="text"
-                  class="mt-0 flex-1 border rounded p-1"
-                  placeholder="输入游戏品牌"
-                  @keydown.enter="() => { appendBrand(createBrand); showAddBrand = false; createBrand = '' }"
-                >
-                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddBrand = true">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Compass color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">版本</span>
-            </div>
-            <div flex-1>
-              <el-select v-if="!gameStore.showEdit" v-model="gameInsIdx" placeholder="版本" :empty-values="[null, undefined, 0]" class="mr-2 w64" clearable>
-                <el-option
-                  v-for="(ins, idx) in gameIns" :key="ins.id"
-                  :value="idx + 1"
-                  :label="ins.version"
-                />
-              </el-select>
-              <div v-else flex flex-1 flex-wrap items-center>
-                <el-input v-if="editGameInsIdx" v-model="editGameIns[editGameInsIdx - 1].version" class="mr-2 w-64" />
-                <el-select v-model="editGameInsIdx" placeholder="版本" :empty-values="[null, undefined, 0]" class="mr-2 w64" clearable>
-                  <el-option
-                    v-for="(ins, idx) in editGameIns" :key="ins.id"
-                    :value="idx + 1"
-                    :label="ins.version"
-                  />
-                </el-select>
-                <button class="flex items-center rounded-full bg-green-500 p1" @click="showAddGameIns = true">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <FolderOpened color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">分类：</span>
-            </div>
-            <div flex-1>
-              <span
-                v-if="!gameStore.showEdit" cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
-                @click="router.push(`/game?category=${game?.category?.id}`)"
-              >{{ game?.category?.name }}</span>
-              <div v-else flex flex-1 flex-wrap items-center>
-                <el-select v-model="createCategoryID" placeholder="游戏分类" :empty-values="[null, undefined, 0]" class="mr-2 w64">
-                  <el-option
-                    v-for="category in categories" :key="category.id"
-                    :value="category.id"
-                    :label="category.name"
-                  />
-                </el-select>
-                <input
-                  v-if="showCategory"
-                  v-model="createCategory"
-                  type="text"
-                  class="mt-0 flex-1 border rounded px-2 py-1"
-                  placeholder="输入游戏分类"
-                  @keydown.enter="() => { appendCategory(createCategory); showCategory = false; createCategory = '' }"
-                >
-                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showCategory = true">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- 游戏系列 -->
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Connection color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">系列：</span>
-            </div>
-            <div flex-1>
-              <template v-if="!gameStore.showEdit">
-                <p
-                  v-for="s in game.series" :key="s.id" cursor-pointer text-lg underline-blue-6 hover:text-blue-500 hover:underline
-                  @click="router.push(`/game?series=${s.id}`)"
-                >
-                  {{ s.name }}
-                </p>
-              </template>
-              <div v-else flex flex-1 flex-wrap items-center>
-                <template v-for="(s, index) in editGame.series" :key="index">
-                  <p
-                    class="mr-2 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
-                  >
-                    {{ s.name }}
-                    <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="removeSeries(index)">
-                      <div i="carbon-close" class="z-20 h-4 w-4" />
-                    </button>
-                  </p>
-                </template>
-                <el-select v-model="createSeriesID" :empty-values="[null, undefined, 0]" placeholder="游戏系列" class="mr-2 w96">
-                  <el-option
-                    v-for="s in series" :key="s.id"
-                    :value="s.id"
-                    :label="s.name"
-                  />
-                </el-select>
-                <input
-                  v-if="showAddSeries"
-                  v-model="createSeries"
-                  type="text"
-                  class="mt-0 flex-1 border rounded px-2 py-1"
-                  placeholder="输入游戏系列"
-                  @keydown.enter="() => { appendSeries(createSeries); showAddSeries = false; createSeries = '' }"
-                >
-                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddSeries = true">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- 游戏标签 -->
-          <div flex items-start>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <div i="carbon-tag" class="z-20 h-[20px] w-[20px] color-blue" />
-              </div>
-              <span class="font-semibold">标签：</span>
-            </div>
-            <div flex-1>
-              <template v-if="!gameStore.showEdit">
-                <TagList :max-height="200" :tags="game.tags">
-                  <template #tag="{ tag }">
-                    <span
-                      class="mb-1 mr-1 inline-block cursor-pointer whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white hover:border-blue-500 hover:text-blue-500"
-                      @click="router.push(`/game?tags=${tag.name}`)"
-                    >
-                      {{ tag.name }}
-                    </span>
-                  </template>
-                </TagList>
-              </template>
-              <div v-else flex flex-1 flex-wrap items-center>
-                <template v-for="(tag, index) in editGame.tags" :key="index">
-                  <span
-                    class="mb-1 mr-1 inline-block flex cursor-pointer items-center whitespace-nowrap border border-gray-600 rounded px-2 py-1 text-sm dark:border-white"
-                  >
-                    {{ tag.name }}
-                    <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="removeTag(tag.name)">
-                      <div i="carbon-close" class="z-20 h-4 w-4" />
-                    </button>
-                  </span>
-                </template>
-                <el-select v-model="createTagID" placeholder="标签" :empty-values="[null, undefined, 0]" class="mr-2 w64">
-                  <el-option
-                    v-for="tag in tags" :key="tag.id"
-                    :value="tag.id"
-                    :label="tag.name"
-                  />
-                </el-select>
-                <input
-                  v-if="showAddTag"
-                  v-model="createTag"
-                  type="text"
-                  class="mt-0 flex-1 border rounded px-2 py-1"
-                  placeholder="输入游戏标签"
-                  @keydown.enter="() => { appendTag(createTag); showAddTag = false; createTag = '' }"
-                >
-                <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showAddTag = true">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- 平台 -->
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Monitor color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">平台: </span>
-            </div>
-            <div flex-1>
-              <template v-if="!gameStore.showEdit">
-                <template v-if="gameInsIdx">
-                  <div
-                    v-for="plat in gameIns[gameInsIdx - 1].platform" :key="plat"
-                    :class="iconMap[plat]"
-                    class="z-20 mr-2 h-6 w-6"
-                    inline-block
-                  />
-                </template>
-                <template v-else>
-                  <div
-                    v-for="plat in platforms" :key="plat"
-                    :class="iconMap[plat]"
-                    class="z-20 mr-2 h-6 w-6"
-                    inline-block
-                  />
-                </template>
-              </template>
-              <template v-else>
-                <template v-if="!editGameInsIdx">
-                  <div
-                    v-for="plat in platforms" :key="plat"
-                    :class="iconMap[plat]"
-                    class="z-20 mr-2 h-6 w-6"
-                    inline-block
-                  />
-                </template>
-                <template v-else>
-                  <el-select v-model="editGameIns[editGameInsIdx - 1].platform" placeholder="游戏平台" clearable multiple style="width: 300px">
-                    <el-option
-                      v-for="(v, k) in platformEnum" :key="k"
-                      :value="k"
-                    >
-                      <div :class="v" />
-                    </el-option>
-                  </el-select>
-                </template>
-              </template>
-            </div>
-          </div>
-          <!-- 游戏语言 -->
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <div i="carbon-ibm-watson-language-translator" class="z-20 h-[20px] w-[20px] color-blue" />
-              </div>
-              <span class="font-semibold">语言: </span>
-            </div>
-            <div flex-1>
-              <template v-if="!gameStore.showEdit">
-                <template v-if="gameInsIdx">
-                  <span
-                    v-for="lang in gameIns[gameInsIdx - 1].language" :key="lang"
-                    mr-2
-                  >
-                    {{ t(lang) }}
-                  </span>
-                </template>
-                <template v-else>
-                  <span
-                    v-for="lang in languages" :key="lang"
-                    mr-2
-                  >
-                    {{ t(lang) }}
-                  </span>
-                </template>
-              </template>
-              <template v-else>
-                <template v-if="!editGameInsIdx">
-                  <span
-                    v-for="lang in languages" :key="lang"
-                    mr-2
-                  >
-                    {{ t(lang) }}
-                  </span>
-                </template>
-                <template v-else>
-                  <el-select v-model="editGameIns[editGameInsIdx - 1].language" multiple placeholder="游戏语言" clearable style="width: 300px">
-                    <el-option
-                      v-for="(v, k) in languageEnum" :key="k"
-                      :label="v"
-                      :value="k"
-                    />
-                  </el-select>
-                </template>
-              </template>
-            </div>
-          </div>
-          <div flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Clock color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">发布时间：</span>
-            </div>
-            <div flex-1>
-              <span v-if="!gameStore.showEdit">{{ game.issue_date?.slice(0, 10) }}</span>
-              <el-date-picker
-                v-else
-                v-model="editGame.issue_date"
-                type="date"
-                placeholder="Pick a day"
-                size="default"
-              />
-            </div>
-          </div>
-          <!-- 游戏路径 -->
-          <div v-if="gameInsIdx && !gameStore.showEdit" flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Folder color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">游戏路径：</span>
-            </div>
-            <div flex-1>
-              <span>{{ gameIns[gameInsIdx - 1].path }}</span>
-            </div>
-          </div>
-          <div v-if="gameStore.showEdit && editGameInsIdx" flex items-center>
-            <div w-30 flex items-center>
-              <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
-                <el-icon :size="20">
-                  <Folder color-blue />
-                </el-icon>
-              </div>
-              <span class="font-semibold">游戏路径：</span>
-            </div>
-            <div flex-1>
-              <el-input
-                v-model="editGameIns[editGameInsIdx - 1].path"
-                placeholder="game path"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- 备注 -->
-      <template v-if="!gameStore.showEdit">
-        <div v-if="gameInsIdx" class="mt-8">
-          <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <h2 mb-2 font-700>
-              备注
-            </h2>
-            <hr mb-1>
-            <div flex items-center>
-              <p class="leading-relaxed" v-html="gameIns[gameInsIdx - 1]?.comment" />
-            </div>
-          </div>
-        </div>
-      </template>
-      <template v-else>
-        <div v-if="editGameInsIdx" class="mt-8">
-          <div class="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <h2 mb-2 font-700>
-              备注
-            </h2>
-            <hr mb-1>
-            <div flex items-center>
-              <el-input
-                v-model="editGameIns[editGameInsIdx - 1].comment"
-                type="textarea"
-                autosize
-              />
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <!-- Tabs -->
-      <div class="mt-8">
-        <div class="flex border-b border-gray-300">
-          <div
-            v-for="tab in tabs"
-            :key="tab"
-            class="cursor-pointer px-4 py-2"
-            :class="activeTab === tab ? 'border-b-2 border-blue-500 text-blue-500 font-semibold' : 'text-gray-400'"
-            @click="activeTab = tab"
-          >
-            <div flex items-center>
-              {{ tab }}
-              <button v-if="gameStore.showEdit && tab === '参与成员'" class="ml-1 flex items-center rounded-full bg-green-500 p1" @click="addStaff">
-                <div i="carbon-add-large" class="z-20 h-4 w-4" />
+            <!-- 快捷按钮组 -->
+            <div class="flex gap-3">
+              <button class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-white font-bold shadow-blue-500/30 shadow-lg transition active:scale-95 hover:bg-blue-700">
+                <el-icon><Monitor /></el-icon> 开始游戏
               </button>
-              <button v-if="gameStore.showEdit && tab === '角色'" class="ml-1 flex items-center rounded-full bg-green-500 p1" @click="addCharacter">
-                <div i="carbon-add-large" class="z-20 h-4 w-4" />
+              <button class="flex items-center border border-gray-200 rounded-lg bg-white p-2.5 text-yellow-500 shadow transition active:scale-95 dark:border-gray-700 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <el-icon :size="20">
+                  <Star />
+                </el-icon>
               </button>
             </div>
-          </div>
-        </div>
 
-        <!-- Tab 内容 -->
-        <div class="mt-4 min-h-[200px]">
-          <!-- 故事 -->
-          <div v-if="activeTab === '故事'">
-            <div class="flex items-center rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-              <p v-if="!gameStore.showEdit" class="leading-relaxed" v-html="game?.story" />
-              <el-input
-                v-else
-                v-model="editGame.story"
-                type="textarea"
-                autosize
-              />
-            </div>
-          </div>
-
-          <!-- 角色 -->
-          <div v-else-if="activeTab === '角色'" class="space-y-4">
-            <template v-if="!gameStore.showEdit">
-              <div
-                v-for="character in game.characters"
-                :key="character.id"
-                class="items-center rounded-lg bg-white p-4 shadow dark:bg-gray-800"
-              >
-                <el-row :gutter="20" w-full>
-                  <el-col :span="6">
-                    <el-image
-                      :src="imageUrl(character.cover)"
-                      alt="角色头像"
-                      :preview-src-list="[imageUrl(character.cover)]"
-                      fit="cover"
-                    />
-                  </el-col>
-                  <el-col :span="18">
-                    <div class="mb-4 flex items-end">
-                      <h3 class="mr-4 text-7 font-semibold">
-                        {{ character.name }}
-                      </h3>
-                      <div class="pb-1">
-                        CV: {{ character.cv?.name }}
+            <!-- 硬核信息表 (Info Table) -->
+            <div class="border border-base rounded-xl bg-card p-5 text-sm shadow-sm backdrop-blur-md">
+              <h4 class="mb-4 text-xs text-gray-400 font-bold tracking-wider uppercase">
+                游戏信息
+              </h4>
+              <div class="space-y-4">
+                <!-- 品牌 -->
+                <div class="flex items-center justify-between">
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <OfficeBuilding color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">品牌</span>
+                  </div>
+                  <div class="ml-4 flex-1 text-right font-medium">
+                    <template v-if="!gameStore.showEdit">
+                      <span
+                        v-for="b in game.brands" :key="b.id"
+                        class="block cursor-pointer text-blue-600 dark:text-blue-400 hover:underline"
+                        @click="goto(`/games?brand=${b.id}`)"
+                      >
+                        {{ b.name }}
+                      </span>
+                    </template>
+                    <div v-else class="flex flex-1 flex-wrap items-center">
+                      <div>
+                        <span
+                          v-for="(brand, index) in editGame.brands" :key="index"
+                          class="mb-1 mr-1 inline-block flex cursor-pointer items-center whitespace-nowrap border border-gray-600 rounded px-2 py-[1px] text-sm dark:border-white"
+                        >
+                          {{ brand.name }}
+                          <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.brands?.splice(index, 1)">
+                            <div i="carbon-close" class="z-20 h-4 w-4" />
+                          </button>
+                        </span>
                       </div>
-                    </div>
-                    <div mb-4>
-                      <el-row :gutter="6" w-130>
-                        <el-col :span="6">
-                          年龄: {{ character.personal_info.age }}
-                        </el-col>
-                        <el-col :span="6">
-                          生日:
-                          <span v-show="character.personal_info.birth_year">{{ character.personal_info.birth_year }}-</span><span v-show="character.personal_info.birthday">{{ character.personal_info.birthday[0] }}-{{ character.personal_info.birthday[1] }}</span>
-                        </el-col>
-                      </el-row>
-                      <el-row :gutter="6" w-130>
-                        <el-col :span="6">
-                          血型: {{ character.personal_info.blood_type }}
-                        </el-col>
-                        <el-col :span="6">
-                          身高: {{ character.personal_info.height }}
-                        </el-col>
-                        <el-col :span="6">
-                          体重: {{ character.personal_info.weight }}
-                        </el-col>
-                      </el-row>
-                      <el-row :gutter="6" w-130>
-                        <el-col :span="6">
-                          胸围: {{ character.personal_info.bust }}
-                        </el-col>
-                        <el-col :span="6">
-                          腰围: {{ character.personal_info.waist }}
-                        </el-col>
-                        <el-col :span="6">
-                          臀围: {{ character.personal_info.hip }}
-                        </el-col>
-                        <el-col :span="6">
-                          cup: {{ character.personal_info.cup }}
-                        </el-col>
-                      </el-row>
-                    </div>
-                    <p v-html="character.summary" />
-                  </el-col>
-                </el-row>
-                <el-row>
-                  <el-col>
-                    <div flex>
-                      <el-image
-                        v-for="image in character.images"
-                        :key="image"
-                        fit="cover"
-                        :src="imageUrl(image)"
-                        class="mr-1 h-25 w-25 rounded object-cover"
-                        :preview-src-list="character.images?.map((img) => imageUrl(img))"
-                        alt=""
-                      />
-                    </div>
-                  </el-col>
-                </el-row>
-              </div>
-            </template>
-            <template v-else>
-              <div
-                v-for="(character, idx) in editGame.characters"
-                :key="character.id"
-                class="relative items-center rounded-lg bg-white p-4 shadow dark:bg-gray-800"
-              >
-                <button class="flex items-center rounded-full bg-red-500 p1" absolute right--3 top--1 @click="() => { if (editGame.characters) editGame.characters.splice(idx, 1) }">
-                  <div i="carbon-subtract-large" class="z-20 h-4 w-4" />
-                </button>
-                <el-row w-full>
-                  <el-col :span="6">
-                    <el-row>
-                      <el-col>
-                        <el-image
-                          :src="imageUrl(character.cover)"
-                          alt="角色头像"
-                          :preview-src-list="[imageUrl(character.cover)]"
-                          fit="cover"
-                        />
-                      </el-col>
-                    </el-row>
-                    <el-row>
-                      <el-col>
-                        <el-upload
-                          :ref="(el: UploadInstance) => { if (el) characterCoverUploadRefs[idx] = el }"
-                          :action="getUploadUrl()"
-                          :limit="1"
-                          :on-exceed="(files: File[]) => handleCharacterCoverExceed(idx, files)"
-                          :on-success="handleCharacterCoverUploadSuccess(idx)"
-                          :before-remove="handleCharacterCoverBeforeRemove(idx)"
-                        >
-                          <template #trigger>
-                            <el-button type="primary">
-                              select file
-                            </el-button>
-                          </template>
-                        </el-upload>
-                      </el-col>
-                    </el-row>
-                  </el-col>
-                  <el-col :span="18">
-                    <div v-if="editGame.characters && editGame.characters[idx]" ml-4 flex-1>
-                      <input v-model="character.name" type="text" class="mb-2 mt-0 w-full flex-1 border rounded p-1" placeholder="角色名">
-                      <div mb-2 flex flex-1 flex-wrap items-center>
-                        <template v-for="(alias, index) in character.alias" :key="index">
-                          <p
-                            class="mb-1 mr-2 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
-                          >
-                            {{ alias }}
-                            <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="removeCharacterAlias(idx, alias)">
-                              <div i="carbon-close" class="z-20 h-4 w-4" />
-                            </button>
-                          </p>
-                        </template>
-                        <input
-                          v-if="showCharacterAddAlias"
-                          v-model="createCharacterAlias"
-                          type="text"
-                          class="mt-0 flex-1 border rounded p-1"
-                          placeholder="输入角色别名"
-                          @keydown.enter="appendCharacterAlias(idx, createCharacterAlias)"
-                        >
-                        <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showCharacterAddAlias = true">
+                      <div class="mb-1 flex">
+                        <el-select v-model="createBrandID" placeholder="品牌" size="small" :empty-values="[null, undefined, 0]" mr-2 style="width: 130px">
+                          <el-option
+                            v-for="brand in brands" :key="brand.id"
+                            :value="brand.id"
+                            :label="brand.name"
+                          />
+                        </el-select>
+                        <button class="flex items-center rounded-full bg-green-500 p1" @click="showAddBrand = true">
                           <div i="carbon-add-large" class="z-20 h-4 w-4" />
                         </button>
                       </div>
-                      <el-select
-                        v-if="editGame.characters[idx].cv"
-                        v-model="editGame.characters[idx].cv.id"
-                        placeholder="CV"
-                        :empty-values="[null, undefined, 0]"
-                        mb-2 mr-2 w-full
+                      <input
+                        v-if="showAddBrand"
+                        v-model="createBrand"
+                        type="text"
+                        class="mt-0 flex-1 border rounded p-1"
+                        placeholder="输入游戏品牌"
+                        @keydown.enter="() => { appendBrand(createBrand); showAddBrand = false; createBrand = '' }"
                       >
-                        <template v-for="s in editGame.staff" :key="s.id">
-                          <el-option
-                            v-if="s.id !== 0 && s.relation.find(r => r === 'cv')"
-                            :label="s.name"
-                            :value="s.id"
-                          />
-                        </template>
+                    </div>
+                  </div>
+                </div>
+                <!-- 分类 -->
+                <div class="flex items-center justify-between">
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <FolderOpened color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">分类</span>
+                  </div>
+                  <span
+                    v-if="!gameStore.showEdit"
+                    class="mr-1 block max-w-[120px] cursor-pointer truncate text-right text-blue-600 font-medium dark:text-blue-400 hover:underline"
+                    @click="goto(`/games?category=${game?.category?.id}`)"
+                  >
+                    {{ game.category?.name || '-' }}
+                  </span>
+                  <div v-else>
+                    <div class="mb-1 flex">
+                      <el-select v-model="createCategoryID" size="small" :empty-values="[null, undefined, 0]" placeholder="分类" mr-2 style="width: 130px">
+                        <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
                       </el-select>
-                      <div flex>
-                        <el-select v-model="editGame.characters[idx].gender" placeholder="性别" style="width: 120px" mr-4>
-                          <el-option
-                            v-for="(v, k) in genderEnum" :key="k"
-                            :label="v"
-                            :value="k"
-                          />
-                        </el-select>
-                        <el-select v-model="editGame.characters[idx].relation" placeholder="角色" style="width: 120px">
-                          <el-option
-                            v-for="(v, k) in roleEnum" :key="k"
-                            :label="v"
-                            :value="k"
-                          />
-                        </el-select>
-                      </div>
-                      <el-input
-                        v-model="editGame.characters[idx].summary"
-                        type="textarea"
-                        autosize
-                        class="mt-2"
-                        placeholder="角色描述"
-                      />
+                      <button class="flex items-center rounded-full bg-green-500 p1" @click="showCategory = true">
+                        <div i="carbon-add-large" class="z-20 h-4 w-4" />
+                      </button>
                     </div>
-                  </el-col>
-                </el-row>
-                <el-row>
-                  <el-col>
-                    <div v-if="editGame.characters && editGame.characters[idx]" flex>
-                      <el-upload
-                        :ref="(el: UploadInstance) => { if (el) characterImageUploadRefs[idx] = el }"
-                        class="custom-upload align-center mr-1 h-25 w-25"
-                        drag
-                        :action="getUploadUrl()"
-                        :show-file-list="false"
-                        :on-success="handleCharacterImageUploadSuccess(idx)"
-                      >
-                        <el-icon class="avatar-uploader-icon">
-                          <Plus />
-                        </el-icon>
-                      </el-upload>
+                    <input
+                      v-if="showCategory"
+                      v-model="createCategory"
+                      type="text"
+                      size="small"
+                      class="mt-0 flex-1 border rounded px-2 py-1"
+                      placeholder="输入游戏分类"
+                      @keydown.enter="() => { appendCategory(createCategory); showCategory = false; createCategory = '' }"
+                    >
+                  </div>
+                </div>
+                <!-- 游戏系列 -->
+                <div class="flex items-center justify-between">
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Connection color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">系列：</span>
+                  </div>
+                  <div v-if="!gameStore.showEdit">
+                    <span
+                      v-for="s in game.series" :key="s.id"
+                      class="mr-1 block max-w-[120px] cursor-pointer truncate text-right text-blue-600 dark:text-blue-400 hover:underline"
+                      :title="s.name"
+                      @click="goto(`/games?series=${s.id}`)"
+                    >
+                      {{ s.name }}
+                    </span>
+                  </div>
+                  <div v-else class="flex flex-1 flex-wrap items-center">
+                    <div class="flex flex-wrap">
                       <div
-                        v-for="image in editGame.characters[idx].images"
-                        :key="image"
-                        relative
+                        v-for="(series, index) in editGame.series" :key="index"
+                        class="mb-1 mr-1 flex items-center border border-gray-600 rounded px-2 py-[1px] text-sm dark:border-white"
+                        :title="series.name"
                       >
-                        <button class="z-10 flex items-center rounded-full bg-red-500 p1" absolute right--1 top--1 @click="rmCharacterImage(idx, image)">
-                          <div i="carbon-subtract-large" class="h-3 w-3" />
+                        <span
+                          class="inline-block max-w-[120px] truncate"
+                        >
+                          {{ series.name }}
+                        </span>
+                        <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.series?.splice(index, 1)">
+                          <div i="carbon-close" class="z-20 h-4 w-4" />
                         </button>
-                        <el-image
-                          fit="cover"
-                          :src="imageUrl(image)"
-                          class="mr-1 h-25 w-25 rounded object-cover"
-                          :preview-src-list="character.images?.map((img) => imageUrl(img))"
-                          alt=""
+                      </div>
+                    </div>
+                    <div class="mb-1 flex">
+                      <el-select v-model="createSeriesID" :empty-values="[null, undefined, 0]" size="small" placeholder="游戏系列" mr-2 style="width: 130px">
+                        <el-option
+                          v-for="s in series" :key="s.id"
+                          :value="s.id"
+                          :label="s.name"
                         />
-                      </div>
+                      </el-select>
+
+                      <button class="flex items-center rounded-full bg-green-500 p1" @click="showAddSeries = true">
+                        <div i="carbon-add-large" class="z-20 h-4 w-4" />
+                      </button>
                     </div>
-                  </el-col>
-                </el-row>
-              </div>
-            </template>
-          </div>
-
-          <!-- 图片集 -->
-          <div v-else-if="activeTab === '图片集'" class="grid grid-cols-2 gap-4 lg:grid-cols-4 md:grid-cols-3">
-            <template v-if="!gameStore.showEdit">
-              <div
-                v-for="(img, i) in game?.images"
-                :key="i"
-                class="relative cursor-pointer"
-              >
-                <el-image
-                  :src="imageUrl(img)"
-                  show-progress
-                  :initial-index="i"
-                  :preview-src-list="game.images?.map((img) => imageUrl(img))"
-                  fit="cover"
-                  class="aspect-[8/5] w-full overflow-hidden"
-                />
-              </div>
-            </template>
-            <template v-else>
-              <el-upload
-                ref="imageUploadRef"
-                class="custom-upload h-full"
-                drag
-                :action="getUploadUrl()"
-                :show-file-list="false"
-                :on-success="handleImageUploadSuccess"
-              >
-                <el-icon>
-                  <Plus />
-                </el-icon>
-              </el-upload>
-              <div
-                v-for="(img, i) in editGame?.images"
-                :key="i"
-                class="relative cursor-pointer"
-              >
-                <button class="z-10 flex items-center rounded-full bg-red-500 p1" absolute right--1 top--1 @click="rmImage(img)">
-                  <div i="carbon-subtract-large" class="h-3 w-3" />
-                </button>
-                <el-image
-                  :src="imageUrl(img)"
-                  show-progress
-                  :initial-index="i"
-                  :preview-src-list="editGame.images?.map((img) => imageUrl(img))"
-                  fit="cover"
-                  class="aspect-[8/5] w-full overflow-hidden"
-                />
-              </div>
-            </template>
-          </div>
-
-          <!-- 参与成员 -->
-          <div v-else-if="activeTab === '参与成员'">
-            <template v-if="!gameStore.showEdit">
-              <!-- 剧本 -->
-              <div class="mb-2 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                <p mb-2 text-lg font-semibold>
-                  剧本:
-                </p>
-                <template v-for="s in game?.staff" :key="s.id">
-                  <span v-if="s.relation.find((r) => r === 'writer')" inline-block whitespace-nowrap>{{ s.name }} <span>, </span> </span>
-                </template>
-              </div>
-              <!-- 原画 -->
-              <div class="mb-2 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                <p mb-2 text-lg font-semibold>
-                  原画:
-                </p>
-                <template v-for="s in game?.staff" :key="s.id">
-                  <span v-if="s.relation.find((r) => r === 'painter')" inline-block whitespace-nowrap>{{ s.name }} <span>, </span> </span>
-                </template>
-              </div>
-              <!-- 声优 -->
-              <div class="mb-2 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                <p mb-2 text-lg font-semibold>
-                  声优:
-                </p>
-                <template v-for="s in game?.staff" :key="s.id">
-                  <span v-if="s.relation.find((r) => r === 'cv')" inline-block whitespace-nowrap>{{ s.name }} <span>, </span> </span>
-                </template>
-              </div>
-              <!-- 音乐 -->
-              <div class="mb-2 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                <p mb-2 text-lg font-semibold>
-                  音乐:
-                </p>
-                <template v-for="s in game?.staff" :key="s.id">
-                  <span v-if="s.relation.find((r) => r === 'music')" inline-block whitespace-nowrap>{{ s.name }} <span>, </span> </span>
-                </template>
-              </div>
-            </template>
-            <template v-else>
-              <div v-for="(s, idx) in editGame.staff" :key="s.id" class="relative mb-2 rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                <template v-if="editGame.staff && editGame.staff[idx]">
-                  <button v-if="s.id === 0" class="flex items-center rounded-full bg-green-500 p1" absolute right--3 top-0 @click="createStaff(idx)">
-                    <div i="carbon-checkmark" class="z-20 h-4 w-4" />
-                  </button>
-                  <button class="flex items-center rounded-full bg-red-500 p1" absolute right--3 top-8 @click="() => { if (editGame.staff) editGame.staff.splice(idx, 1) }">
-                    <div i="carbon-subtract-large" class="z-20 h-4 w-4" />
-                  </button>
-                  <div mb-2 flex>
-                    <el-image fit="cover" :src="imageUrl(s.cover)" class="h-30 w-30 object-cover" alt="" />
-                    <div ml-4 flex-1>
-                      <input v-model="editGame.staff[idx].name" type="text" class="mb-2 mt-0 w-full flex-1 border rounded px-2 py-1" placeholder="姓名">
-                      <div mb-2>
-                        <el-select v-model="editGame.staff[idx].gender" placeholder="性别" style="width: 240px">
+                    <input
+                      v-if="showAddSeries"
+                      v-model="createSeries"
+                      type="text"
+                      class="mt-0 flex-1 border rounded px-2 py-1"
+                      placeholder="输入游戏系列"
+                      @keydown.enter="() => { appendSeries(createSeries); showAddSeries = false; createSeries = '' }"
+                    >
+                  </div>
+                </div>
+                <!-- 发行日期 -->
+                <div class="flex items-center justify-between">
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Clock color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">发行日期</span>
+                  </div>
+                  <span v-if="!gameStore.showEdit" class="font-medium">{{ game.issue_date?.slice(0, 10) || '-' }}</span>
+                  <el-date-picker v-else v-model="editGame.issue_date" type="date" size="small" style="width: 164px" />
+                </div>
+                <!-- 版本 -->
+                <div class="flex items-center justify-between">
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Compass color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">版本</span>
+                  </div>
+                  <div>
+                    <el-select v-if="!gameStore.showEdit" v-model="gameInsIdx" size="small" placeholder="版本" :empty-values="[null, undefined, 0]" class="mr-2 w-[130px]" clearable>
+                      <el-option
+                        v-for="(ins, idx) in gameIns" :key="ins.id"
+                        :value="idx + 1"
+                        :label="ins.version"
+                      />
+                    </el-select>
+                    <div v-else class="mb-1 flex">
+                      <el-input v-if="editGameInsIdx" v-model="editGameIns[editGameInsIdx - 1].version" size="small" class="mr-1" style="width: 40px" />
+                      <el-select v-model="editGameInsIdx" placeholder="版本" size="small" :empty-values="[null, undefined, 0]" class="mr-2 w-[130px]" clearable>
+                        <el-option
+                          v-for="(ins, idx) in editGameIns" :key="ins.id"
+                          :value="idx + 1"
+                          :label="ins.version"
+                        />
+                      </el-select>
+                      <button class="flex items-center rounded-full bg-green-500 p1" @click="showAddGameIns = true">
+                        <div i="carbon-add-large" class="z-20 h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <!-- 平台 -->
+                <div class="flex items-center justify-between">
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Monitor color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">平台</span>
+                  </div>
+                  <div flex-1>
+                    <template v-if="!gameStore.showEdit">
+                      <template v-if="gameInsIdx">
+                        <div
+                          v-for="plat in gameIns[gameInsIdx - 1].platform" :key="plat"
+                          :class="iconMap[plat]"
+                          class="z-20 mr-2 h-6 w-6"
+                          inline-block
+                        />
+                      </template>
+                      <template v-else>
+                        <div
+                          v-for="plat in platforms" :key="plat"
+                          :class="iconMap[plat]"
+                          class="z-20 mr-2 h-6 w-6"
+                          inline-block
+                        />
+                      </template>
+                    </template>
+                    <template v-else>
+                      <template v-if="!editGameInsIdx">
+                        <div
+                          v-for="plat in platforms" :key="plat"
+                          :class="iconMap[plat]"
+                          class="z-20 mr-2 h-6 w-6"
+                          inline-block
+                        />
+                      </template>
+                      <template v-else>
+                        <el-select v-model="editGameIns[editGameInsIdx - 1].platform" size="small" placeholder="游戏平台" clearable multiple class="w-[160px]">
                           <el-option
-                            v-for="(v, k) in genderEnum" :key="k"
+                            v-for="(v, k) in platformEnum" :key="k"
+                            :value="k"
+                          >
+                            <div :class="v" />
+                          </el-option>
+                        </el-select>
+                      </template>
+                    </template>
+                  </div>
+                </div>
+                <!-- 游戏语言 -->
+                <div flex items-center>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <div i="carbon-ibm-watson-language-translator" class="z-20 h-[20px] w-[20px] color-blue" />
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">语言: </span>
+                  </div>
+                  <div flex-1>
+                    <template v-if="!gameStore.showEdit">
+                      <template v-if="gameInsIdx">
+                        <span
+                          v-for="lang in gameIns[gameInsIdx - 1].language" :key="lang"
+                          mr-2
+                        >
+                          {{ t(lang) }}
+                        </span>
+                      </template>
+                      <template v-else>
+                        <span
+                          v-for="lang in languages" :key="lang"
+                          mr-2
+                        >
+                          {{ t(lang) }}
+                        </span>
+                      </template>
+                    </template>
+                    <template v-else>
+                      <template v-if="!editGameInsIdx">
+                        <span
+                          v-for="lang in languages" :key="lang"
+                          mr-2
+                        >
+                          {{ t(lang) }}
+                        </span>
+                      </template>
+                      <template v-else>
+                        <el-select v-model="editGameIns[editGameInsIdx - 1].language" size="small" multiple placeholder="游戏语言" clearable style="width: 160px">
+                          <el-option
+                            v-for="(v, k) in languageEnum" :key="k"
                             :label="v"
                             :value="k"
                           />
                         </el-select>
-                      </div>
-                      <div>
-                        <el-select v-model="editGame.staff[idx].relation" multiple placeholder="分工" style="width: 240px">
-                          <el-option
-                            v-for="(v, k) in workEnum" :key="k"
-                            :label="v"
-                            :value="k"
-                          />
-                        </el-select>
-                      </div>
+                      </template>
+                    </template>
+                  </div>
+                </div>
+                <!-- 游戏路径 -->
+                <div v-if="gameInsIdx && !gameStore.showEdit" flex items-center>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Folder color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">游戏路径：</span>
+                  </div>
+                  <div flex-1>
+                    <span>{{ gameIns[gameInsIdx - 1].path }}</span>
+                  </div>
+                </div>
+                <div v-if="gameStore.showEdit && editGameInsIdx" flex items-center>
+                  <div w-30 flex items-center>
+                    <div mr-1 flex items-center rounded-lg bg-gray-100 p-1 dark:bg-gray-800>
+                      <el-icon :size="20">
+                        <Folder color-blue />
+                      </el-icon>
+                    </div>
+                    <span class="text-gray-500 dark:text-gray-400">游戏路径：</span>
+                  </div>
+                  <div flex-1>
+                    <el-input
+                      v-model="editGameIns[editGameInsIdx - 1].path"
+                      size="small"
+                      placeholder="game path"
+                    />
+                  </div>
+                </div>
+                <!-- 相关链接 -->
+                <div class="border-t border-gray-200 pt-3 dark:border-gray-700">
+                  <div class="flex flex-col gap-2">
+                    <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" class="flex items-center gap-2 text-gray-600 transition dark:text-gray-300 hover:text-blue-500">
+                      <el-icon><Connection /></el-icon> {{ link.name }}
+                    </a>
+                    <div v-if="gameStore.showEdit">
+                      <el-button size="small" icon="Edit" @click="activeTab = '相关链接'">
+                        编辑链接
+                      </el-button>
                     </div>
                   </div>
-                  <div flex>
-                    <el-image v-for="image in s.images" :key="image" fit="cover" :src="imageUrl(image)" class="h-20 w-20 object-cover" alt="" />
-                  </div>
-                  <div flex items-center>
-                    <input v-model="editGame.staff[idx].cover" type="text" class="mb-2 mt-0 mt-2 w-full flex-1 border rounded p-1" placeholder="封面">
-                    <button class="ml-2 h-7 w-10 flex items-center justify-center rounded-md bg-green-500 p1" @click="editGame.staff[idx].images.push('')">
-                      <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                    </button>
-                  </div>
-                  <div v-for="(image, index) in s.images" :key="image" flex items-center>
-                    <input v-model="editGame.staff[idx].images[index]" type="text" class="mb-2 mt-0 mt-2 w-full flex-1 border rounded p-1" placeholder="图片">
-                    <button class="ml-2 h-7 w-10 flex items-center justify-center rounded-md bg-green-500 p1" @click="() => { if (editGame.staff) editGame.staff[idx].images.splice(index, 1) }">
-                      <div i="carbon-subtract-large" class="z-20 h-4 w-4" />
-                    </button>
-                  </div>
-                  <textarea
-                    v-model="editGame.staff[idx].summary"
-                    type="textarea"
-                    rows="2"
-                    class="w-full flex-1 border rounded p-2"
-                    placeholder="描述"
-                  />
-                </template>
+                </div>
               </div>
-            </template>
+            </div>
           </div>
+        </div>
 
-          <!-- 相关链接 -->
-          <div v-else-if="activeTab === '相关链接'">
-            <template v-if="!gameStore.showEdit">
-              <p v-for="link in game.links" :key="link.url" mb-2>
-                <el-link type="success" :href="link.url" target="_blank" text-lg>
-                  {{ link.name }}
-                </el-link>
-              </p>
-            </template>
-            <template v-else>
-              <div flex-1>
-                <div v-for="index in editGame.links?.length" :key="index" mb-2 flex items-center>
-                  <input
-                    v-if="editGame.links"
-                    v-model="editGame.links[index - 1].name"
-                    type="text"
-                    mr-2
-                    class="mt-0 flex-1 border rounded p-1"
-                    placeholder="输入游戏相关链接名"
-                  >
-                  <input
-                    v-if="editGame.links"
-                    v-model="editGame.links[index - 1].url"
-                    type="text"
-                    mr-2
-                    class="mt-0 flex-1 border rounded p-1"
-                    placeholder="输入游戏相关链接"
-                  >
-                  <button class="flex items-center rounded-full bg-red-500 p1" @click="removeLink(index - 1)">
+        <!-- [右栏] 内容流：标题 -> 标签 -> 简介 -> Tabs -->
+        <div class="min-w-0 flex flex-1 flex-col gap-8">
+          <!-- 1. 头部信息 -->
+          <div>
+            <h1 v-if="!gameStore.showEdit" class="mb-3 text-4xl text-gray-900 font-extrabold leading-tight tracking-tight drop-shadow-sm md:text-5xl dark:text-white">
+              {{ game?.name }}
+            </h1>
+            <el-input v-else v-model="editGame.name" class="mb-3 text-4xl font-bold" size="large" />
+
+            <!-- 别名显示 -->
+            <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <el-icon><Guide /></el-icon>
+              <template v-if="!gameStore.showEdit">
+                <span
+                  v-for="alias in game?.alias" :key="alias"
+                  class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
+                >
+                  {{ alias }}
+                </span>
+              </template>
+              <template v-else>
+                <span
+                  v-for="(alias, idx) in editGame?.alias" :key="alias"
+                  class="flex items-center whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
+                >
+                  {{ alias }}
+                  <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.alias?.splice(idx, 1)">
                     <div i="carbon-close" class="z-20 h-4 w-4" />
                   </button>
-                </div>
-                <button class="flex items-center rounded-full bg-green-500 p1" @click="appendLink">
-                  <div i="carbon-add-large" class="z-20 h-4 w-4" />
-                </button>
-              </div>
-            </template>
+                </span>
+                <el-button type="primary" link size="small" @click="showAddAlias = true">
+                  + 别名
+                </el-button>
+              </template>
+            </div>
+            <div v-if="showAddAlias" class="mt-2 flex gap-2">
+              <el-input v-model="createAlias" size="small" placeholder="输入别名" @keyup.enter="appendAlias" />
+            </div>
           </div>
 
-          <!-- 其他信息 -->
-          <div v-else-if="activeTab === '其他信息'">
-            <div class="flex items-center rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-              <p v-if="!gameStore.showEdit" class="leading-relaxed" v-html="game?.other_info" />
-              <el-input
-                v-else
-                v-model="editGame.other_info"
-                type="textarea"
-                autosize
+          <!-- 2. 标签云 (带折叠功能) -->
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                v-for="(tag, index) in (gameStore.showEdit ? editGame.tags : game.tags)"
+                v-show="gameStore.showEdit || index < TAG_LIMIT || isTagsExpanded"
+                :key="tag.id"
+                class="flex cursor-pointer items-center gap-1 border border-indigo-100 rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-600 font-medium transition hover:scale-105 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+                @click="goto(`/games?tags=${tag.id}`)"
+              >
+                #{{ tag.name }}
+                <el-icon v-if="gameStore.showEdit" class="hover:text-red-500" @click.stop="removeTag(tag.name)"><Delete /></el-icon>
+              </span>
+              <button
+                v-if="!gameStore.showEdit && !isTagsExpanded && (game.tags?.length || 0) > TAG_LIMIT"
+                class="flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 font-bold transition dark:bg-gray-700 hover:bg-gray-200 dark:text-gray-300"
+                @click="isTagsExpanded = true"
+              >
+                <el-icon class="mr-1">
+                  <More />
+                </el-icon> 还有 {{ (game.tags?.length || 0) - TAG_LIMIT }} 个
+              </button>
+              <button v-if="!gameStore.showEdit && isTagsExpanded" class="text-xs text-gray-400 hover:text-blue-500" @click="isTagsExpanded = false">
+                收起
+              </button>
+              <div v-if="gameStore.showEdit" class="flex items-center gap-2">
+                <el-select v-model="createTagID" size="small" filterable placeholder="选择标签" :empty-values="[null, undefined, 0]" class="w-32">
+                  <el-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id" />
+                </el-select>
+                <el-input v-if="showAddTag" v-model="createTag" size="small" placeholder="新建" class="w-24" @keyup.enter="appendTag(createTag)" />
+                <el-button v-else size="small" :icon="Plus" circle @click="showAddTag = true" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 简介 (带折叠) -->
+          <div class="relative border border-base rounded-2xl bg-card p-6 backdrop-blur-sm">
+            <h3 class="mb-3 text-xs text-gray-400 font-bold tracking-wider uppercase">
+              简介
+            </h3>
+            <div v-if="!gameStore.showEdit">
+              <div
+                class="overflow-hidden text-left text-gray-700 leading-relaxed transition-all duration-300 dark:text-gray-300"
+                :class="isStoryExpanded ? '' : 'line-clamp-16 max-h-100'"
+                v-html="game?.story || '<span class=\'text-gray-400 italic\'>暂无简介</span>'"
               />
+              <div v-if="!isStoryExpanded && (game.story?.length || 0) > 100" class="absolute bottom-0 left-0 h-16 w-full flex items-end justify-center rounded-b-2xl from-white to-transparent bg-gradient-to-t pb-2 dark:from-gray-800">
+                <button class="border border-gray-100 rounded-full bg-white/90 px-4 py-1.5 text-xs text-blue-600 font-bold shadow-sm dark:border-gray-700 dark:bg-gray-800/90 dark:text-blue-400 hover:underline" @click="isStoryExpanded = true">
+                  展开阅读全文
+                </button>
+              </div>
+              <div v-else-if="isStoryExpanded" class="mt-2 text-center">
+                <button class="text-xs text-gray-400 hover:text-gray-600" @click="isStoryExpanded = false">
+                  收起
+                </button>
+              </div>
+            </div>
+            <el-input v-else v-model="editGame.story" type="textarea" :rows="12" placeholder="输入简介..." />
+          </div>
+
+          <!-- 4. Tabs 导航与内容 -->
+          <div>
+            <!-- Sticky Tab Header -->
+            <div class="sticky top--4 z-20 mb-6 border-b border-base bg-card px-4 pt-2 backdrop-blur -mx-4 md:mx-0 md:rounded-lg md:px-3">
+              <div class="no-scrollbar flex gap-8 overflow-x-auto px-4">
+                <button
+                  v-for="tab in tabs" :key="tab" class="whitespace-nowrap border-b-2 px-1 pb-2 text-base font-medium transition-colors"
+                  :class="activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+                  @click="activeTab = tab"
+                >
+                  {{ tab }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="min-h-[300px]">
+              <!-- 角色 Tab -->
+              <div v-show="activeTab === '角色'" class="animate-fade-in">
+                <div v-if="gameStore.showEdit" class="mb-4 flex justify-end">
+                  <el-button type="primary" :icon="Plus" @click="addCharacter">
+                    添加角色
+                  </el-button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                  <div
+                    v-for="(char, idx) in (gameStore.showEdit ? editGame.characters : game.characters)"
+                    :key="char.id"
+                    class="group relative cursor-pointer overflow-hidden border border-gray-100 rounded-xl bg-white shadow-sm transition dark:border-gray-700 dark:bg-gray-800 hover:shadow-md"
+                    @click="!gameStore.showEdit && openCharacterDetail(char)"
+                  >
+                    <div class="relative aspect-square overflow-hidden bg-gray-200">
+                      <img :src="imageUrl(char.cover)" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+                      <div class="absolute bottom-0 left-0 w-full from-black/90 to-transparent bg-gradient-to-t p-3 pt-8">
+                        <div class="text-xs text-white font-medium opacity-90">
+                          CV: {{ char.cv?.name || '未知' }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="p-3">
+                      <div class="mb-1 flex items-center justify-between">
+                        <div class="flex-1 truncate text-gray-900 font-bold dark:text-white" :title="char.name">
+                          {{ char.name }}
+                        </div>
+                        <el-icon v-if="char.gender === 'female'" color="pink">
+                          <Female />
+                        </el-icon>
+                        <el-icon v-else-if="char.gender === 'male'" color="#409EFF">
+                          <Male />
+                        </el-icon>
+                      </div>
+                      <p class="line-clamp-2 h-8 text-xs text-gray-500 dark:text-gray-400">
+                        {{ char.summary || '暂无描述' }}
+                      </p>
+                    </div>
+
+                    <div
+                      v-if="gameStore.showEdit"
+                      class="character-container absolute right-1 top-1 z-10 rounded-full transition-all duration-300"
+                    >
+                      <div
+                        class="z-10 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md hover:bg-primary"
+                        @click="showCharacterEdit = true; editGameCharacterIdx = idx"
+                      >
+                        <div i="carbon-edit" class="h-4 w-4" />
+                      </div>
+                      <div
+                        class="delete-btn absolute top-0 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
+                        @click="() => { if (editGame.characters) editGame.characters.splice(idx, 1) }"
+                      >
+                        <div i="carbon-trash-can" class="h-4 w-4" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 图片集 Tab -->
+              <div v-show="activeTab === '图片集'" class="animate-fade-in">
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 sm:grid-cols-3">
+                  <div v-if="gameStore.showEdit" class="aspect-video flex flex-col items-center justify-center rounded-xl bg-gray-50 transition dark:bg-gray-800/50">
+                    <Upload
+                      :action="getUploadUrl()"
+                      class="h-full w-full"
+                      @success="handleImageUploadSuccess"
+                    />
+                  </div>
+                  <div v-for="(img, i) in (gameStore.showEdit ? editGame.images : game.images)" :key="i" class="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-gray-100">
+                    <el-image
+                      :src="imageUrl(img)"
+                      class="h-full w-full object-cover transition"
+                      fit="cover"
+                      :preview-src-list="game.images?.map(u => imageUrl(u))"
+                      :initial-index="i"
+                      loading="lazy"
+                    />
+                    <div
+                      v-if="gameStore.showEdit"
+                      class="absolute right-1 top-1 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
+                      @click="rmImage(img)"
+                    >
+                      <div i="carbon-trash-can" class="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 参与成员 Tab -->
+              <div v-show="activeTab === '参与成员'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="gameStore.showEdit" class="mb-4 flex justify-end">
+                  <el-button type="primary" icon="Plus" @click="addStaff">
+                    添加成员
+                  </el-button>
+                </div>
+                <div class="space-y-6">
+                  <div v-for="(roleGroup, roleName) in { writer: '剧本', painter: '原画', cv: '声优', music: '音乐' }" :key="roleName">
+                    <h4 class="mb-3 border-l-4 border-blue-500 pl-3 text-left text-gray-900 font-bold dark:text-white">
+                      {{ roleName }}
+                    </h4>
+                    <div class="flex flex-wrap gap-3">
+                      <template v-for="(s, idx) in (gameStore.showEdit ? editGame.staff : game.staff)" :key="s.id">
+                        <div v-if="s.relation.includes(roleName as any)" class="flex items-center gap-2 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-700/50">
+                          <el-avatar :size="32" :src="imageUrl(s.cover)" />
+                          <span class="text-sm font-medium">{{ s.name }}</span>
+                          <div v-if="gameStore.showEdit">
+                            <el-button size="small" type="primary" link :icon="Edit" @click="showStaffEdit = true; editGameStaffIdx = idx" />
+                            <el-button size="small" type="danger" link :icon="Close" @click="editGame.staff?.splice(idx, 1)" />
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 相关链接 Tab -->
+              <div v-show="activeTab === '相关链接'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="!gameStore.showEdit" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" class="group flex items-center border border-gray-200 rounded-lg p-4 transition dark:border-gray-700 hover:border-blue-500 hover:shadow-md">
+                    <div class="mr-3 rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30"><el-icon :size="20"><Connection /></el-icon></div>
+                    <div>
+                      <div class="text-left text-gray-900 font-bold dark:text-white group-hover:text-blue-600">{{ link.name }}</div>
+                      <div class="max-w-[200px] truncate text-left text-xs text-gray-400">{{ link.url }}</div>
+                    </div>
+                  </a>
+                </div>
+                <div v-else>
+                  <div v-for="(l, i) in editGame.links" :key="i" class="mb-2 flex gap-2">
+                    <el-input v-model="l.name" placeholder="名称" />
+                    <el-input v-model="l.url" placeholder="URL" />
+                    <el-button type="danger" :icon="Delete" circle @click="editGame.links?.splice(i, 1)" />
+                  </div>
+                  <el-button type="primary" plain :icon="Plus" class="mt-2 w-full" @click="() => { if (!editGame.links) editGame.links = []; editGame.links.push({ name: '', url: '', type: '' }) }">
+                    添加链接
+                  </el-button>
+                </div>
+              </div>
+
+              <!-- 其他信息 Tab -->
+              <div v-show="activeTab === '其他信息'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="!gameStore.showEdit" class="max-w-none prose dark:prose-invert" v-html="game.other_info" />
+                <el-input v-else v-model="editGame.other_info" type="textarea" :rows="10" />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 弹窗组件 -->
+    <el-dialog v-model="showUpdate" title="更新确认" width="400px" center>
+      <span class="block py-4 text-center text-lg">确认保存所有修改吗？</span>
+      <template #footer>
+        <div class="flex justify-center gap-4">
+          <el-button @click="showUpdate = false">
+            取消
+          </el-button>
+          <el-button type="primary" @click="updateGame">
+            确认保存
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showAddGameIns" title="添加游戏资源" width="500px">
+      <div class="px-2 space-y-4">
+        <el-input v-model="createGameIns.path" placeholder="路径">
+          <template #prepend>
+            路径
+          </template>
+        </el-input>
+        <el-input v-model="createGameIns.version" placeholder="版本">
+          <template #prepend>
+            版本
+          </template>
+        </el-input>
+        <el-select v-model="createGameIns.platform" multiple placeholder="平台" class="w-full">
+          <el-option v-for="(v, k) in platformEnum" :key="k" :value="k" :label="v" />
+        </el-select>
+        <el-select v-model="createGameIns.language" multiple placeholder="语言" class="w-full">
+          <el-option v-for="(v, k) in languageEnum" :key="k" :value="k" :label="v" />
+        </el-select>
+        <el-input v-model="createGameIns.comment" type="textarea" placeholder="备注" />
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <el-button @click="showAddGameIns = false">
+            取消
+          </el-button><el-button type="primary" @click="addGameIns">
+            添加
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 
+  <!-- 角色详情弹窗 -->
   <el-dialog
-    v-model="showUpdate"
-    title="Update confirm"
-    width="500"
+    v-model="showCharacterModal"
+    width="1000px"
+    destroy-on-close align-center
+    class="overflow-hidden rounded-2xl"
   >
-    <span>是否更新游戏信息</span>
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="showUpdate = false">
-          Cancel
-        </el-button>
-        <el-button type="primary" @click="updateGame">
-          Confirm
-        </el-button>
+    <div v-if="selectedCharacter" class="flex flex-col gap-8 -mx-6 -mb-6 -mt-6 md:flex-row">
+      <!-- 左侧：立绘大图 -->
+      <div class="relative w-full flex-shrink-0 bg-gray-100 md:w-80 dark:bg-gray-900">
+        <img
+          :src="imageUrl(selectedCharacter.cover)"
+          class="h-full min-h-[400px] w-full object-cover md:h-[600px]"
+        >
+        <!-- CV 浮层 -->
+        <div class="absolute bottom-0 left-0 w-full from-black/80 to-transparent bg-gradient-to-t p-6 pt-20">
+          <div class="mb-1 text-xs text-gray-300 tracking-wider uppercase">
+            Voice Actor
+          </div>
+          <div class="text-xl text-white font-bold">
+            {{ selectedCharacter.cv?.name || '未知' }}
+          </div>
+        </div>
       </div>
-    </template>
-  </el-dialog>
-
-  <el-dialog
-    v-model="showAddGameIns"
-    title="游戏实体信息"
-  >
-    <el-row :gutter="4" mb-2>
-      <el-col :span="4">
-        <div h-full flex items-center>
-          <label class="mr-4 w22 text-center text-right font-medium">游戏路径</label>
+      <!-- 右侧：详细信息 -->
+      <div class="max-h-[600px] flex flex-1 flex-col overflow-y-auto py-8 pl-8 pr-8 md:pl-0">
+        <!-- 头部：姓名与性别 -->
+        <div class="mb-6 flex items-start justify-between">
+          <div>
+            <h2 class="mb-1 mb-4 text-3xl text-gray-900 font-extrabold dark:text-white">
+              {{ selectedCharacter.name }}
+            </h2>
+            <div class="flex flex-wrap gap-2">
+              <span v-for="alias in selectedCharacter.alias" :key="alias" class="rounded bg-gray-100 px-2 py-0.5 text-nowrap text-sm text-gray-500 dark:bg-gray-800">{{ alias }}</span>
+            </div>
+          </div>
+          <div class="flex rounded-full bg-gray-50 p-2 dark:bg-gray-800">
+            <el-icon v-if="selectedCharacter.gender === 'female'" :size="20" color="pink">
+              <Female />
+            </el-icon>
+            <el-icon v-else-if="selectedCharacter.gender === 'male'" :size="20" color="#409EFF">
+              <Male />
+            </el-icon>
+          </div>
         </div>
-      </el-col>
-      <el-col :span="20">
-        <input v-model="createGameIns.path" type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏路径">
-      </el-col>
-    </el-row>
-    <el-row :gutter="4" mb-2>
-      <el-col :span="4">
-        <div h-full flex items-center>
-          <label class="mr-4 w22 text-center text-right font-medium">游戏版本</label>
+        <!-- 简介 -->
+        <div class="mb-8 border border-gray-100 rounded-xl bg-gray-50 p-4 text-sm text-gray-600 leading-relaxed prose dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-300 dark:prose-invert">
+          {{ selectedCharacter.summary || '暂无角色简介...' }}
         </div>
-      </el-col>
-      <el-col :span="20">
-        <input v-model="createGameIns.version" type="text" class="mt-0 w-full border rounded px-2 py-1" autofocus placeholder="输入游戏版本">
-      </el-col>
-    </el-row>
-    <el-row :gutter="4" mb-2>
-      <el-col :span="4">
-        <div h-full flex items-center>
-          <label class="mr-4 w22 text-center text-right font-medium">游戏语言</label>
+        <!-- 属性网格 -->
+        <div class="grid grid-cols-2 mb-8 gap-4 sm:grid-cols-3">
+          <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+            <div class="mb-1 text-xs text-gray-400">
+              生日
+            </div>
+            <div class="font-medium">
+              <template v-if="selectedCharacter.personal_info?.birth_year">
+                {{ selectedCharacter.personal_info.birth_year }}年
+              </template>
+              <template v-if="selectedCharacter.personal_info?.birthday">
+                {{ selectedCharacter.personal_info.birthday[0] }}月{{ selectedCharacter.personal_info.birthday[1] }}日
+              </template>
+              <template v-if="!selectedCharacter.personal_info?.birthday && !selectedCharacter.personal_info?.birth_year">
+                -
+              </template>
+            </div>
+          </div>
+          <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+            <div class="mb-1 text-xs text-gray-400">
+              身高
+            </div>
+            <div class="font-medium">
+              {{ selectedCharacter.personal_info?.height || '-' }}
+            </div>
+          </div>
+          <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+            <div class="mb-1 text-xs text-gray-400">
+              体重
+            </div>
+            <div class="font-medium">
+              {{ selectedCharacter.personal_info?.weight || '-' }}
+            </div>
+          </div>
+          <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+            <div class="mb-1 text-xs text-gray-400">
+              B (胸围)
+            </div>
+            <div class="font-medium">
+              {{ selectedCharacter.personal_info?.bust || '-' }} <span v-if="selectedCharacter.personal_info?.cup" class="text-xs text-gray-400">({{ selectedCharacter.personal_info.cup }})</span>
+            </div>
+          </div>
+          <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+            <div class="mb-1 text-xs text-gray-400">
+              W (腰围)
+            </div>
+            <div class="font-medium">
+              {{ selectedCharacter.personal_info?.waist || '-' }}
+            </div>
+          </div>
+          <div class="border border-gray-100 rounded-lg bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+            <div class="mb-1 text-xs text-gray-400">
+              H (臀围)
+            </div>
+            <div class="font-medium">
+              {{ selectedCharacter.personal_info?.hip || '-' }}
+            </div>
+          </div>
         </div>
-      </el-col>
-      <el-col :span="20">
-        <div flex items-start>
-          <el-select v-model="createGameIns.language" multiple placeholder="游戏语言" clearable style="width: 300px">
-            <el-option
-              v-for="(v, k) in languageEnum" :key="k"
-              :label="v"
-              :value="k"
+        <!-- 图集 -->
+        <div v-if="selectedCharacter.images && selectedCharacter.images.length > 0">
+          <h3 class="mb-4 text-xs text-gray-400 font-bold tracking-wider uppercase">
+            图集
+          </h3>
+          <div class="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+            <el-image
+              v-for="(img, idx) in selectedCharacter.images"
+              :key="idx"
+              :src="imageUrl(img)"
+              :preview-src-list="selectedCharacter.images.map(i => imageUrl(i))"
+              :initial-index="idx"
+              class="h-24 w-24 flex-shrink-0 cursor-pointer border border-gray-200 rounded-lg object-cover dark:border-gray-700"
+              fit="cover"
             />
-          </el-select>
+          </div>
         </div>
-      </el-col>
-    </el-row>
-    <el-row :gutter="4" mb-2>
-      <el-col :span="4">
-        <div h-full flex items-center>
-          <label class="mr-4 w22 text-center text-right font-medium">游戏平台</label>
-        </div>
-      </el-col>
-      <el-col :span="20">
-        <div flex items-start>
-          <el-select v-model="createGameIns.platform" multiple placeholder="游戏平台" clearable style="width: 300px">
-            <el-option
-              v-for="(v, k) in platformEnum" :key="k"
-              :value="k"
-            >
-              <div :class="v" />
-            </el-option>
-          </el-select>
-        </div>
-      </el-col>
-    </el-row>
-    <el-row :gutter="4" mb-2>
-      <el-col :span="4">
-        <div h-full flex items-center>
-          <label class="mr-4 w22 text-center text-right font-medium">实体描述</label>
-        </div>
-      </el-col>
-      <el-col :span="20">
-        <textarea
-          v-model="createGameIns.comment"
-          type="textarea"
-          rows="2"
-          class="w-full flex-1 border rounded p-2"
-          placeholder="描述"
-        />
-      </el-col>
-    </el-row>
-
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="showAddGameIns = false">
-          Cancel
-        </el-button>
-        <el-button type="primary" @click="addGameIns">
-          Confirm
-        </el-button>
       </div>
-    </template>
+    </div>
   </el-dialog>
+
+  <!-- 角色详情编辑 -->
+  <el-drawer
+    v-model="showCharacterEdit"
+    title="角色编辑"
+    direction="rtl"
+  >
+    <div
+      v-if="editGame.characters"
+    >
+      <el-row w-full>
+        <el-col :span="6">
+          <el-row>
+            <el-col class="relative min-h-120px overflow-hidden rounded-xl">
+              <img
+                :src="imageUrl(editGame.characters[editGameCharacterIdx].cover)"
+                alt="角色头像"
+                fit="cover"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              >
+              <div class="absolute top-0 h-full w-full hover:bg-black/60">
+                <Upload
+                  class="absolute top-0 h-full w-full opacity-0 hover:opacity-100"
+                  :action="getUploadUrl()"
+                  @success="(data) => { editGame.characters[editGameCharacterIdx].cover = data.data.path }"
+                >
+                  <template #content>
+                    <div class="flex flex-col items-center">
+                      <el-icon :size="32" color="#fff">
+                        <Camera />
+                      </el-icon>
+                      <span class="mt-2 text-white font-bold">更换封面</span>
+                      <div i="carbon-trash-can" class="z-20 mt-2 hover:text-red" @click.stop="editGame.characters[editGameCharacterIdx].cover = game.characters[editGameCharacterIdx].cover" />
+                    </div>
+                  </template>
+                </Upload>
+              </div>
+            </el-col>
+          </el-row>
+        </el-col>
+        <el-col :span="18">
+          <div v-if="editGame.characters[editGameCharacterIdx]" ml-4 flex-1>
+            <input v-model="editGame.characters[editGameCharacterIdx].name" type="text" class="mb-2 mt-0 w-full flex-1 border rounded p-1" placeholder="角色名">
+            <div mb-2 flex flex-1 flex-wrap items-center>
+              <template v-for="(alias, index) in editGame.characters[editGameCharacterIdx].alias" :key="index">
+                <p
+                  class="mb-1 mr-2 flex items-center border rounded bg-gray-50 px-1 text-center dark:bg-gray-600"
+                >
+                  {{ alias }}
+                  <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-800" @click="removeCharacterAlias(editGameCharacterIdx, alias)">
+                    <div i="carbon-close" class="z-20 h-4 w-4" />
+                  </button>
+                </p>
+              </template>
+              <input
+                v-if="showCharacterAddAlias"
+                v-model="createCharacterAlias"
+                type="text"
+                class="mt-0 flex-1 border rounded p-1"
+                placeholder="输入角色别名"
+                @keydown.enter="appendCharacterAlias(editGameCharacterIdx, createCharacterAlias)"
+              >
+              <button v-else class="flex items-center rounded-full bg-green-500 p1" @click="showCharacterAddAlias = true">
+                <div i="carbon-add-large" class="z-20 h-4 w-4" />
+              </button>
+            </div>
+            <el-select
+              v-model="editGame.characters[editGameCharacterIdx].cv.id"
+              placeholder="CV"
+              :empty-values="[null, undefined, 0]"
+              mb-2 mr-2 w-full
+            >
+              <template v-for="s in editGame.staff" :key="s.id">
+                <el-option
+                  v-if="s.id !== 0 && s.relation.find(r => r === 'cv')"
+                  :label="s.name"
+                  :value="s.id"
+                />
+              </template>
+            </el-select>
+            <div flex>
+              <el-select v-model="editGame.characters[editGameCharacterIdx].gender" placeholder="性别" style="width: 120px" mr-4>
+                <el-option
+                  v-for="(v, k) in genderEnum" :key="k"
+                  :label="v"
+                  :value="k"
+                />
+              </el-select>
+              <el-select v-model="editGame.characters[editGameCharacterIdx].relation" placeholder="角色" style="width: 120px">
+                <el-option
+                  v-for="(v, k) in roleEnum" :key="k"
+                  :label="v"
+                  :value="k"
+                />
+              </el-select>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+      <el-input
+        v-model="editGame.characters[editGameCharacterIdx].summary"
+        type="textarea"
+        autosize
+        class="mb-4 mt-2"
+        placeholder="角色描述"
+      />
+      <el-row>
+        <el-col>
+          <div v-if="editGame.characters && editGame.characters[editGameCharacterIdx]" flex>
+            <Upload
+              :action="getUploadUrl()"
+              class="mr-1 h-40 w-34 bg-gray-50 dark:bg-gray-800/50"
+              @success="handleCharacterImageUploadSuccess"
+            />
+            <div
+              v-for="image in editGame.characters[editGameCharacterIdx].images"
+              :key="image"
+              relative
+            >
+              <button class="z-10 flex items-center rounded-full bg-red-500 p1" absolute right--1 top--1 @click="rmCharacterImage(editGameCharacterIdx, image)">
+                <div i="carbon-subtract-large" class="h-3 w-3" />
+              </button>
+              <el-image
+                fit="cover"
+                :src="imageUrl(image)"
+                class="mr-1 h-40 w-34 rounded object-cover"
+                :preview-src-list="editGame.characters[editGameCharacterIdx].images?.map((img) => imageUrl(img))"
+                alt=""
+              />
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+  </el-drawer>
+
+  <!-- 成员详情编辑 -->
+  <el-drawer
+    v-model="showStaffEdit"
+    title="参与成员编辑"
+    direction="rtl"
+  >
+    <div
+      v-if="editGame.staff"
+    >
+      <el-row w-full>
+        <el-col :span="6">
+          <el-row>
+            <el-col class="relative min-h-120px overflow-hidden rounded-xl">
+              <img
+                :src="imageUrl(editGame.staff[editGameStaffIdx].cover)"
+                alt="角色头像"
+                fit="cover"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              >
+              <div class="absolute top-0 h-full w-full hover:bg-black/60">
+                <Upload
+                  class="absolute top-0 h-full w-full opacity-0 hover:opacity-100"
+                  :action="getUploadUrl()"
+                  @success="(data) => { editGame.staff[editGameStaffIdx].cover = data.data.path }"
+                >
+                  <template #content>
+                    <div class="flex flex-col items-center">
+                      <el-icon :size="32" color="#fff">
+                        <Camera />
+                      </el-icon>
+                      <span class="mt-2 text-white font-bold">更换封面</span>
+                      <div i="carbon-trash-can" class="z-20 mt-2 hover:text-red" @click.stop="editGame.staff[editGameStaffIdx].cover = game.staff[editGameStaffIdx].cover" />
+                    </div>
+                  </template>
+                </Upload>
+              </div>
+            </el-col>
+          </el-row>
+        </el-col>
+        <el-col :span="18">
+          <div v-if="editGame.staff[editGameStaffIdx]" ml-4 flex-1>
+            <input v-model="editGame.staff[editGameStaffIdx].name" type="text" class="mb-2 mt-0 w-full flex-1 border rounded p-1" placeholder="角色名">
+            <div flex>
+              <el-select v-model="editGame.staff[editGameStaffIdx].gender" class="mr-2" placeholder="性别" style="width: 120px">
+                <el-option
+                  v-for="(v, k) in genderEnum" :key="k"
+                  :label="v"
+                  :value="k"
+                />
+              </el-select>
+              <el-select v-model="editGame.staff[editGameStaffIdx].relation" multiple placeholder="分工">
+                <el-option
+                  v-for="(v, k) in workEnum" :key="k"
+                  :label="v"
+                  :value="k"
+                />
+              </el-select>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+      <el-input
+        v-model="editGame.staff[editGameStaffIdx].summary"
+        type="textarea"
+        autosize
+        class="mb-4 mt-2"
+        placeholder="成员描述"
+      />
+      <el-row>
+        <el-col>
+          <div v-if="editGame.staff && editGame.staff[editGameStaffIdx]" flex>
+            <Upload
+              :action="getUploadUrl()"
+              class="mr-1 h-40 w-34 bg-gray-50 dark:bg-gray-800/50"
+              @success="handleStaffImageUploadSuccess"
+            />
+            <div
+              v-for="image in editGame.staff[editGameStaffIdx].images"
+              :key="image"
+              relative
+            >
+              <button class="z-10 flex items-center rounded-full bg-red-500 p1" absolute right--1 top--1 @click="rmStaffImage(editGameStaffIdx, image)">
+                <div i="carbon-subtract-large" class="h-3 w-3" />
+              </button>
+              <el-image
+                fit="cover"
+                :src="imageUrl(image)"
+                class="mr-1 h-40 w-34 rounded object-cover"
+                :preview-src-list="editGame.staff[editGameStaffIdx].images?.map((img) => imageUrl(img))"
+                alt=""
+              />
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+  </el-drawer>
+
+  <div
+    class="action-container fixed bottom-[120px] left-[calc(100%-127px)] z-20 flex items-center rounded-full bg-card p1 shadow-md transition-all duration-300"
+  >
+    <!-- Edit 按钮 -->
+    <div
+      class="edit-btn z-10 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md hover:bg-primary"
+      @click="gameStore.showEdit = !gameStore.showEdit"
+    >
+      <div i="carbon-edit" class="h-6 w-6" />
+    </div>
+
+    <!-- Save 按钮（默认隐藏在左边） -->
+    <div
+      class="save-btn absolute flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
+      @click="showUpdate = true"
+    >
+      <div i="carbon-save" class="h-6 w-6" />
+    </div>
+  </div>
 </template>
 
 <style scoped>
-:deep(.custom-upload .is-drag) {
-  height: 100%;
-  width: 100%;
+/* 隐藏滚动条但允许滚动 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-:deep(.custom-upload .el-upload-dragger) {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+/* 淡入动画 */
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.action-container {
+  width: 48px; /* 默认显示 Edit 时的宽度 */
+  height: 48px;
+  overflow: visible;
+  position: fixed;
+}
+/* 保存按钮初始在左边看不到的位置 */
+.action-container .save-btn {
+  left: 0;
+  opacity: 0;
+}
+/* 悬停时容器展开 */
+.action-container:hover {
+  width: 95px; /* 容器向右扩展 */
+}
+/* 悬停时 Save 按钮滑到右边 */
+.action-container:hover .save-btn {
+  left: 50px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.character-container {
+  overflow: visible;
+}
+.character-container .delete-btn {
+  left: 0;
+  opacity: 0;
+}
+.character-container:hover {
+  height: 95px; /* 容器向下扩展 */
+}
+.character-container:hover .delete-btn {
+  top: 35px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* 输入框背景适配 */
+:deep(.el-input__wrapper) {
+  background-color: rgba(var(--c-bg-input), 1);
+  box-shadow: 0 0 0 1px rgba(var(--c-border-strong), 1) inset;
+}
+
+:deep(.el-button:hover) {
+  background-color: rgba(var(--c-primary), 1);
+  border-color: rgba(var(--c-border-strong), 1);
+  color: white;
+}
+:deep(.el-button) {
+  border-color: rgba(var(--c-border), 1);
+}
+:deep(.el-input-group__prepend) {
+  --el-input-border-color: rgba(var(--c-border-strong), 1);
+}
+:deep(.el-select__wrapper) {
+  background-color: rgba(var(--c-bg-input), 1);
+  box-shadow: 0 0 0 1px rgba(var(--c-border-strong), 1) inset;
+}
+:deep(.el-switch.is-checked.el-switch__core) {
+  background-color: rgba(var(--c-primary), 1);
+}
+:deep(.el-textarea__inner) {
+  background-color: rgba(var(--c-bg-input), 1);
+  --el-input-border-color: rgba(var(--c-border), 1);
+}
+:deep(.el-image-viewer__wrapper) {
+  z-index: 9999999 !important;
 }
 </style>
 

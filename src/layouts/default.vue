@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ElNotification } from 'element-plus'
-import { useWebSocket } from '~/utils/websocket'
+import { useWsNotify } from '~/composables/useWsNotify'
 
+const { on } = useWsNotify()
 const isSidebarOpen = ref(false) // 移动端
 const isCollapsed = ref(false) // 折叠状态
 
@@ -12,20 +13,16 @@ onMounted(() => {
     isCollapsed.value = saved === 'true'
   }
 
-  const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_auto_scrap')
-  if (connection && connection.value) {
-    connection.value.onmessage = function (event) {
-      const data = JSON.parse(event.data)
-      if (data.event === 'autoscrap') {
-        ElNotification({
-          title: data.message,
-          type: data.success ? 'success' : 'error',
-          duration: 10000,
-          position: 'top-right',
-        })
-      }
+  on(({ event, data }) => {
+    if (event === 'scraper:autoscrap' || event === 'info_file:download' || event === 'info_file:load') {
+      ElNotification({
+        title: data.message,
+        type: data.success ? 'success' : 'error',
+        duration: 10000,
+        position: 'top-right',
+      })
     }
-  }
+  })
 })
 
 // 监听并保存

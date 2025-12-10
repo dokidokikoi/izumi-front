@@ -18,5 +18,9 @@ export const navItems: NavItem[] = [
 
   { divider: true },
 
+  { name: 'Task', path: '/task', icon: 'i-carbon-task-view' },
+
+  { divider: true },
+
   { name: 'GitHub', path: 'https://github.com/dokidokikoi/izumi', external: true, icon: 'i-carbon-logo-github' },
 ]

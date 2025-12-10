@@ -22,10 +22,10 @@ declare module 'vue-router/auto-routes' {
     '/[...all]': RouteRecordInfo<'/[...all]', '/:all(.*)', { all: ParamValue<true> }, { all: ParamValue<false> }>,
     '/games/': RouteRecordInfo<'/games/', '/games', Record<never, never>, Record<never, never>>,
     '/games/[id]': RouteRecordInfo<'/games/[id]', '/games/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
-    '/games/new/[id]': RouteRecordInfo<'/games/new/[id]', '/games/new/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     '/library': RouteRecordInfo<'/library', '/library', Record<never, never>, Record<never, never>>,
     '/policy': RouteRecordInfo<'/policy', '/policy', Record<never, never>, Record<never, never>>,
     '/README': RouteRecordInfo<'/README', '/README', Record<never, never>, Record<never, never>>,
     '/scrap/': RouteRecordInfo<'/scrap/', '/scrap', Record<never, never>, Record<never, never>>,
+    '/task': RouteRecordInfo<'/task', '/task', Record<never, never>, Record<never, never>>,
   }
 }

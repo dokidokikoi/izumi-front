@@ -10,12 +10,13 @@ import { ElMessage, ElNotification } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { scrapApi } from '~/apis/game'
+import { useWsNotify } from '~/composables/useWsNotify'
 import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
-import { useWebSocket } from '~/utils/websocket'
 
 const route = useRoute()
 const gameStore = useGameStore()
+const { onEvent } = useWsNotify()
 
 // --- 状态管理 ---
 const loading = ref(false)
@@ -94,10 +95,18 @@ function submitAutoScrape() {
   if (selectedGames.value.length === 0)
     return
 
+  let name = ''
+  for (const game of selectedGames.value) {
+    if (game.scraper_name === 'vndb') {
+      name = game.name
+    }
+  }
+
   const req: ScraperAutoReq = {
     objs: selectedGames.value.map(g => ({ name: g.scraper_name, url: g.url })),
     path: gamePath.value,
     version: 'v0',
+    name,
   }
 
   scrapApi.auto(req).then(() => {
@@ -138,43 +147,35 @@ onMounted(() => {
     handleSearch()
   }
 
-  const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_search')
-  if (connection && connection.value) {
-    connection.value.onmessage = function (event) {
-      const data = JSON.parse(event.data)
-
-      // 收到搜索完成通知
-      if (data.event === 'search') {
-        loading.value = false
-        if (data.success) {
-          // 获取具体结果详情
-          scrapApi.get(data.rid).then((res) => {
-            // 整理数据
-            for (const sourceKey in res.data) {
-              const list = res.data[sourceKey]
-              scrapResultsMap.value.set(sourceKey, list)
-              if (list && list.length > 0 && !resultSources.value.includes(sourceKey)) {
-                resultSources.value.push(sourceKey)
-              }
-            }
-            // 如果当前没有选中 Tab，默认选第一个有数据的
-            if (!activeSource.value && resultSources.value.length > 0) {
-              activeSource.value = resultSources.value[0]
-            }
-          }).finally(() => {
-            process.value = scrapResultsMap.value.size / (scrapers.length - 1) * 100
-          })
-        }
-        else {
-          if (data.data?.name) {
-            scrapResultsMap.value.set(data.data?.name, [])
+  onEvent('scraper:search', (data: any) => {
+    loading.value = false
+    if (data.success) {
+      // 获取具体结果详情
+      scrapApi.get(data.rid).then((res) => {
+        // 整理数据
+        for (const sourceKey in res.data) {
+          const list = res.data[sourceKey]
+          scrapResultsMap.value.set(sourceKey, list)
+          if (list && list.length > 0 && !resultSources.value.includes(sourceKey)) {
+            resultSources.value.push(sourceKey)
           }
-          ElNotification.error({ title: '搜索失败', message: data.data?.name || '未知错误' })
         }
+        // 如果当前没有选中 Tab，默认选第一个有数据的
+        if (!activeSource.value && resultSources.value.length > 0) {
+          activeSource.value = resultSources.value[0]
+        }
+      }).finally(() => {
         process.value = scrapResultsMap.value.size / (scrapers.length - 1) * 100
-      }
+      })
     }
-  }
+    else {
+      if (data.data?.name) {
+        scrapResultsMap.value.set(data.data?.name, [])
+      }
+      ElNotification.error({ title: '搜索失败', message: data.data?.name || '未知错误' })
+    }
+    process.value = scrapResultsMap.value.size / (scrapers.length - 1) * 100
+  })
 })
 </script>
 

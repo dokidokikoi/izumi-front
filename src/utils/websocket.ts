@@ -2,6 +2,8 @@ import { ElNotification } from 'element-plus'
 // src/composables/useWebSocket.ts
 import { onUnmounted, ref } from 'vue'
 
+let heartbeatInterval: number | null = null
+
 export function useWebSocket(path: string, autoReconnect = true) {
   let prefix = import.meta.env.VITE_API_BASE || window.location.origin.concat('/ws')
   prefix = prefix.replace('http://', 'ws://')
@@ -14,24 +16,12 @@ export function useWebSocket(path: string, autoReconnect = true) {
 
     connection.value.onopen = (event) => {
       console.warn('[WebSocket] Connected:', event)
-      // ElNotification({
-      //   title: 'WebSocket',
-      //   message: '成功连接到服务器',
-      //   type: 'success',
-      //   duration: 3000,
-      //   position: 'bottom-right',
-      // })
+      startHeartbeat(connection.value)
     }
 
     connection.value.onclose = (event) => {
       console.warn('[WebSocket] Closed:', event)
-      // ElNotification({
-      //   title: 'WebSocket',
-      //   message: '连接已关闭',
-      //   type: 'error',
-      //   duration: 5000,
-      //   position: 'bottom-right',
-      // })
+      stopHeartbeat()
       if (autoReconnect) {
         console.warn('[WebSocket] Reconnecting in 3s...')
         setTimeout(connect, 3000)
@@ -60,5 +50,20 @@ export function useWebSocket(path: string, autoReconnect = true) {
   return {
     connection,
     send: (msg: string) => connection.value?.send(msg),
+  }
+
+  function startHeartbeat(connection: WebSocket | null) {
+    if (heartbeatInterval)
+      return
+    heartbeatInterval = window.setInterval(() => {
+      connection?.send(JSON.stringify({ type: 'ping' }))
+    }, 20000)
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval)
+      heartbeatInterval = null
+    }
   }
 }

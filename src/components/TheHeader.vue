@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { gameApi } from '~/apis/game'
+import { useWsNotify } from '~/composables/useWsNotify'
 import { loadLanguageAsync } from '~/modules/i18n'
 import { useGameStore } from '~/stores/gameStore'
 
@@ -12,6 +13,7 @@ const emit = defineEmits<{
 
 // i18n
 const { locale } = useI18n()
+const { wsState } = useWsNotify()
 
 // 切换语言
 async function switchLocale() {
@@ -24,7 +26,7 @@ const route = useRoute()
 
 // 判断是否在游戏列表页面
 const showSearch = computed(() => route.name === '/games/')
-const showEdit = computed(() => route.name === '/games/[id]' || route.name === '/games/new/[id]' || route.name === '/games/')
+const showEdit = computed(() => route.name === '/games/[id]' || route.name === '/games/')
 const showLogo = computed(() => route.name !== '/')
 
 // 搜索框内容
@@ -34,8 +36,12 @@ const showSortMenu = ref(false)
 
 // 排序选项
 const sortOptions = [
-  { label: '按名称排序', value: 'name desc' },
-  { label: '按创建时间排序', value: 'id desc' },
+  { label: '按名称倒序', value: 'name desc' },
+  { label: '按名称排序', value: 'name asc' },
+  { label: '按创建时间倒序', value: 'id desc' },
+  { label: '按创建时间排序', value: 'id asc' },
+  { label: '按发售时间倒序', value: 'issue_date desc' },
+  { label: '按发售时间排序', value: 'issue_date asc' },
 ]
 
 const gameStore = useGameStore()
@@ -91,9 +97,10 @@ function showSakura() {
 
       <!-- 搜索框（仅在游戏列表页面显示） -->
       <div v-if="showSearch" class="mx-6 max-w-lg flex-1">
-        <el-autocomplete
+        <el-input
           v-model="searchQuery"
           placeholder="搜索游戏..."
+          clearable
           @keydown.enter="handleEnter"
         />
       </div>
@@ -158,6 +165,9 @@ function showSakura() {
           {{ t.label }}
         </button>
       </div>
+
+      <div v-if="wsState === 1" i="carbon-connection-signal" class="z-20 h-4 w-4 color-green" />
+      <div v-else i="carbon-connection-signal-off" class="z-20 h-4 w-4 color-red" />
 
       <!-- 移动端侧边栏按钮 -->
       <button class="p-2 md:hidden" @click="emit('toggleSidebar')">

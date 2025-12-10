@@ -137,7 +137,7 @@ export interface Policy {
 //
 export interface GameListReq {
   keyword: string
-  tags: string[]
+  tags: number[]
   series: number
   category: number
   staff: number
@@ -185,6 +185,7 @@ export interface ScraperAutoReq {
   objs: ScraperDetailReqObj[]
   path: string
   version: string
+  name: string
 }
 
 //
@@ -225,4 +226,34 @@ export interface PathInfo {
 export interface UpdatePolicyReq {
   key: string
   policy: string
+}
+
+// types.ts
+export type TaskType = 'download' | 'load' | 'scrap' | ''
+export type TaskStatus = 'canceled' | 'running' | 'done' | 'failed' | ''
+
+export interface Task {
+  id: string
+  type: TaskType
+  state: TaskStatus
+  param: {
+    name: string
+  }
+  result?: string
+  created_at: string
+  updated_at: string
+
+  progress: number
+}
+
+export interface ListTaskReq {
+  type?: TaskType
+  status?: TaskStatus
+  page?: number
+  page_size?: number
+}
+
+export interface TaskListResponse {
+  list: Task[]
+  total: number
 }

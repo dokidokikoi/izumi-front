@@ -2,10 +2,10 @@
 import type { Brand, Category, Character, Game, GameInstance, Series, Staff, Tag } from '~/types'
 import { ElMessage, ElNotification } from 'element-plus'
 import { brandApi, categoryApi, characterApi, gameApi, personApi, scrapApi, seriesApi, tagApi } from '~/apis/game'
+import { useWsNotify } from '~/composables/useWsNotify'
 import { genderEnum, languageEnum, platformEnum, roleEnum, workEnum } from '~/config/enum'
 import { useGameStore } from '~/stores/gameStore'
 import { imageUrl } from '~/utils/image'
-import { useWebSocket } from '~/utils/websocket'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -14,6 +14,7 @@ const props = defineProps({
 
 const gameStore = useGameStore()
 const rid = ref('')
+const { onEvent } = useWsNotify()
 
 const scrapAllGames = ref<Game[]>([])
 const scrapGameIndex = ref(0)
@@ -644,26 +645,19 @@ function fetchScrap() {
 }
 
 onMounted(() => {
-  const { connection } = useWebSocket('/notify?topic=scraper&uid=izumi_scrap')
-  if (connection && connection.value) {
-    connection.value.onmessage = function (event) {
-      const data = JSON.parse(event.data)
-      rid.value = data.rid
-      if (data.event === 'detail') {
-        if (data.success) {
-          scrapApi.get(data.rid).then((res) => {
-            scrapAllGames.value = res.data
-          })
-        }
-        ElNotification({
-          title: data.data.name,
-          type: 'success',
-          duration: 5000,
-          position: 'bottom-right',
-        })
-      }
+  onEvent('scraper:detail', (data: any) => {
+    if (data.success) {
+      scrapApi.get(data.rid).then((res) => {
+        scrapAllGames.value = res.data
+      })
     }
-  }
+    ElNotification({
+      title: data.data.name,
+      type: 'success',
+      duration: 5000,
+      position: 'bottom-right',
+    })
+  })
 })
 </script>
 

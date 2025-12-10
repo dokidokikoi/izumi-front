@@ -6,6 +6,7 @@ import type {
   GameInstance,
   GameListReq,
   GameListResponse,
+  ListTaskReq,
   PersonSearchReq,
   ScraperAutoReq,
   ScraperDetailReq,
@@ -165,6 +166,12 @@ export const personApi = {
 export const libraryApi = {
   ls(path: string, onlyNoScrap: boolean) {
     return request.get(`/library?path=${path}&only_no_scrap=${onlyNoScrap}`)
+  },
+}
+
+export const taskApi = {
+  list<TaskListResponse>(data: ListTaskReq) {
+    return request.get<TaskListResponse>(`/system_task?type=${data.type}&status=${data.status}&page=${data.page}&page_size=${data.page_size}`)
   },
 }
 
