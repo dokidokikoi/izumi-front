@@ -24,6 +24,7 @@ export interface Series {
   name: string
   created_at: string
   updated_at: string
+  games: number
 }
 
 // 游戏厂商

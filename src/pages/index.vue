@@ -1,11 +1,12 @@
 <script setup lang="ts">
-// 引入图标需要确保 unocss.config.ts 配置了 presetIcons
-// 或者安装了 @unocss/preset-icons
+import type { Series } from '~/types'
+import { gameApi, seriesApi } from '~/apis/game'
 
 defineOptions({
   name: 'IndexPage',
 })
 
+const router = useRouter()
 const { t } = useI18n()
 
 useHead({
@@ -13,19 +14,32 @@ useHead({
 })
 
 // --- 模拟数据 (后续可替换为 API 请求) ---
-const stats = [
-  { label: '库游戏数', value: 500, sub: '刮削游戏数', icon: 'i-carbon-game-console', color: 'text-primary' },
-  { label: '本地游戏数', value: 128, sub: '已下载/保存', icon: 'i-carbon-vmdk-disk', color: 'text-success' },
-  { label: '标签总数', value: 98, sub: '全部分类标签', icon: 'i-carbon-tag', color: 'text-warning' },
-  { label: '活跃标签', value: 88, sub: '已关联游戏', icon: 'i-carbon-bookmark-filled', color: 'text-error' },
-]
+const stats = ref([
+  { label: '库游戏数', value: 0, sub: '刮削游戏数', icon: 'i-carbon-game-console', color: 'text-primary', bgColor: 'bg-primary' },
+  { label: '本地游戏数', value: 0, sub: '已下载/保存', icon: 'i-carbon-vmdk-disk', color: 'text-success', bgColor: 'bg-success' },
+  { label: '标签总数', value: 0, sub: '全部分类标签', icon: 'i-carbon-tag', color: 'text-warning', bgColor: 'bg-warning' },
+  { label: '活跃标签', value: 0, sub: '已关联游戏', icon: 'i-carbon-bookmark-filled', color: 'text-error', bgColor: 'bg-error' },
+])
 
-const seriesList = [
-  { name: 'Final Fantasy', count: 14 },
-  { name: 'Resident Evil', count: 8 },
-  { name: 'The Legend of Zelda', count: 12 },
-  { name: 'Dark Souls', count: 3 },
-]
+gameApi.panel().then((res) => {
+  stats.value[0].value = res.data.games
+  stats.value[1].value = res.data.local_games
+  stats.value[2].value = res.data.tags
+  stats.value[3].value = res.data.used_tags
+})
+
+const seriesList = ref<Series[]>([])
+const pageSize = ref(10)
+function getSeries() {
+  seriesApi.list(1, pageSize.value).then((res) => {
+    seriesList.value = res.data.list
+  })
+}
+function toggleSeries() {
+  pageSize.value = pageSize.value === 0 ? 10 : 0
+  getSeries()
+}
+getSeries()
 
 const playLists = [
   { name: '周末必玩', status: 'Active', date: '2h ago' },
@@ -33,6 +47,11 @@ const playLists = [
   { name: '恐怖游戏合集', status: 'Active', date: '3d ago' },
   { name: '合家欢', status: 'Done', date: '1w ago' },
 ]
+
+function go(seriesId: number) {
+  const { href } = router.resolve(`/games?series=${seriesId}`)
+  window.open(href, '_blank')
+}
 </script>
 
 <template>
@@ -72,7 +91,7 @@ const playLists = [
             </p>
           </div>
           <!-- 图标背景装饰 -->
-          <div :class="`rounded-lg p-3 bg-opacity-10 ${item.color.replace('text-', 'bg-')}`">
+          <div :class="`rounded-lg p-3 bg-opacity-10 ${item.bgColor}`">
             <div :class="`${item.icon} text-2xl ${item.color}`" />
           </div>
         </div>
@@ -91,8 +110,13 @@ const playLists = [
             <div i-carbon-list class="text-primary" />
             游戏系列
           </h3>
-          <button class="text-xs text-primary transition hover:text-hover">
-            View All
+          <button class="text-xs text-primary transition hover:text-hover" @click="toggleSeries">
+            <span v-if="pageSize">
+              View All
+            </span>
+            <span v-else>
+              Limited
+            </span>
           </button>
         </div>
         <ul class="p-2">
@@ -100,6 +124,7 @@ const playLists = [
             v-for="(series, idx) in seriesList"
             :key="idx"
             class="group flex cursor-pointer items-center justify-between rounded-lg p-3 transition hover:bg-page"
+            @click="go(series.id)"
           >
             <div class="flex items-center gap-3">
               <div class="h-8 w-8 flex items-center justify-center rounded bg-input text-sm text-muted font-bold transition group-hover:bg-primary group-hover:text-white">
@@ -108,7 +133,7 @@ const playLists = [
               <span class="font-medium">{{ series.name }}</span>
             </div>
             <span class="border border-base rounded-full bg-input px-2.5 py-0.5 text-xs text-muted">
-              {{ series.count }} games
+              {{ series.games }} games
             </span>
           </li>
         </ul>
@@ -132,9 +157,9 @@ const playLists = [
               <p class="text-sm font-medium">
                 {{ list.name }}
               </p>
-              <p class="mt-0.5 text-xs text-muted">
+              <!-- <p class="mt-0.5 text-xs text-muted">
                 {{ list.date }}
-              </p>
+              </p> -->
             </div>
             <div
               class="h-2 w-2 rounded-full"

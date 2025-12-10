@@ -47,6 +47,9 @@ export const gameApi = {
   updateGameIns(data: Partial<GameInstance>) {
     return request.patch(`/game/ins`, data)
   },
+  panel() {
+    return request.get('/game/panel')
+  },
 }
 
 export const scrapApi = {
@@ -89,8 +92,8 @@ export const seriesApi = {
   create(name: string) {
     return request.post('/series', { name })
   },
-  list() {
-    return request.get('/series')
+  list(page: number = 0, page_size: number = 0) {
+    return request.get(`/series?page=${page}&page_size=${page_size}`)
   },
   delete(ids: string[]) {
     return request.delete(`/series`, { ids })
