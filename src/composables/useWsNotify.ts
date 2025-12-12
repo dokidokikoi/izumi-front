@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 let heartbeatInterval: number | null = null
 let ws: WebSocket | null = null
-const wsState = ref<WebSocket['readyState']>(WebSocket.CLOSED)
+const wsState = ref<WebSocket['readyState']>(3)
 
 // 全局 EventBus（key 为事件名）
 const bus = useEventBus<{ event: string, data: any }>('ws-notify')
