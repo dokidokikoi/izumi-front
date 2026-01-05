@@ -43,7 +43,7 @@ function toggleExpand(path: string) {
   expandedItems.value[path] = !expandedItems.value[path]
 }
 
-const libraryNoScrap = ref(false)
+const libraryNoScrap = ref(true)
 // 获取列表数据
 function list(path: string) {
   if (!path)
@@ -61,6 +61,10 @@ function list(path: string) {
 
 // 初始化
 onMounted(() => {
+  const noScrap = localStorage.getItem('libraryNoScrap')
+  if (noScrap !== null) {
+    libraryNoScrap.value = noScrap === 'true'
+  }
   policyApi.get().then((res) => {
     // 查找配置中的 library 路径
     const systemConfig = Object.entries(res.data).find(([k]) => k === 'system')
@@ -83,7 +87,10 @@ onMounted(() => {
 })
 
 // 监听变化
-watch(() => libraryNoScrap.value, () => list(selectedGameLibrary.value))
+watch(() => libraryNoScrap.value, (newVal) => {
+  localStorage.setItem('libraryNoScrap', String(newVal))
+  list(selectedGameLibrary.value)
+})
 watch(() => selectedGameLibrary.value, (newVal) => {
   if (newVal) {
     list(newVal)
