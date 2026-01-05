@@ -1645,8 +1645,3 @@ function rmImage(img: string) {
   z-index: 9999999 !important;
 }
 </style>
-
-<route lang="yaml">
-meta:
-  layout: default
-</route>
