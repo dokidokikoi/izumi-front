@@ -37,11 +37,11 @@ const showSortMenu = ref(false)
 // 排序选项
 const sortOptions = [
   { label: '按名称倒序', value: 'name desc' },
-  { label: '按名称排序', value: 'name asc' },
+  { label: '按名称顺序', value: 'name asc' },
   { label: '按创建时间倒序', value: 'id desc' },
-  { label: '按创建时间排序', value: 'id asc' },
+  { label: '按创建时间顺序', value: 'id asc' },
   { label: '按发售时间倒序', value: 'issue_date desc' },
-  { label: '按发售时间排序', value: 'issue_date asc' },
+  { label: '按发售时间顺序', value: 'issue_date asc' },
 ]
 
 const gameStore = useGameStore()

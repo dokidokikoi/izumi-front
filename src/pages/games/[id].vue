@@ -18,7 +18,6 @@ import {
   More,
   OfficeBuilding,
   Plus,
-  Star,
 } from '@element-plus/icons-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -60,7 +59,7 @@ const activeTab = ref('角色')
 const tabs = ['角色', '图片集', '参与成员', '相关链接', '其他信息']
 const isStoryExpanded = ref(false)
 const isTagsExpanded = ref(false)
-const TAG_LIMIT = 50
+const TAG_LIMIT = 25
 const showUpdate = ref(false)
 const showAddGameIns = ref(false)
 
@@ -441,69 +440,340 @@ function rmImage(img: string) {
   <!-- 全局容器：相对定位，用于放置背景 -->
   <div class="relative min-h-screen w-full pb-20 text-gray-800 dark:text-gray-100">
     <!-- 1. 沉浸式背景层 (Hero Background) -->
-    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <!-- 背景图：高斯模糊 + 暗色遮罩 -->
+    <!-- 背景图：高斯模糊 + 暗色遮罩 -->
+    <!-- <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <img
         v-if="game?.cover"
         :src="imageUrl(game.cover)"
         class="h-full w-full scale-110 object-cover opacity-60 blur-3xl dark:opacity-40"
       >
-      <div class="absolute inset-0 from-white/30 via-white/80 to-white bg-gradient-to-b dark:from-gray-900/30 dark:via-gray-900/80 dark:to-gray-900" />
+      <div class="absolute inset-0 from-white/30 via-white/80 to-white bg-gradient-to-t dark:from-gray-900/30 dark:via-gray-900/80 dark:to-gray-900" />
+    </div> -->
+
+    <!-- === 顶部 Banner (Hero Section) === -->
+    <div class="relative h-[40vh] w-full overflow-hidden md:h-[50vh]">
+      <!-- Banner 图片 (优先使用 background，没有则用 cover) -->
+      <img
+        v-if="game?.cover"
+        :src="imageUrl(game?.cover)"
+        class="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-1000 group-hover:scale-105"
+      >
+      <!-- 渐变遮罩：让底部自然过渡到页面背景 -->
+      <div class="absolute inset-0 from-gray-50 via-transparent to-transparent bg-gradient-to-t dark:from-gray-900" />
+      <div class="absolute inset-0 from-gray-50/60 via-transparent to-transparent bg-gradient-to-r dark:from-gray-900/60" />
+
+      <!-- 头部信息块 (海报 + 标题) -->
+      <div class="absolute bottom-0 left-0 right-0 z-20 w-full px-4 pb-12">
+        <div class="mx-auto w-[80%] flex flex-col items-end gap-8 md:flex-row">
+          <!-- 封面图 (Poster) -->
+          <div class="group relative aspect-[2/3] w-[200px] shrink-0 overflow-hidden rounded-xl bg-gray-200 shadow-xl ring-4 ring-white/20 md:w-[240px] dark:bg-gray-800 dark:ring-white/10">
+            <img
+              v-if="!gameStore.showEdit"
+              :src="imageUrl(game?.cover)"
+              class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            >
+            <!-- 编辑模式：更换封面 (保持原有逻辑) -->
+            <template v-else>
+              <img :src="imageUrl(editGame?.cover)" class="h-full w-full object-cover opacity-50">
+              <div class="absolute inset-0 flex flex-col cursor-pointer items-center justify-center bg-black/30 opacity-80 transition-opacity hover:opacity-100">
+                <Upload class="absolute inset-0" :action="getUploadUrl()" @success="(data) => { editGame.cover = data.data.path }">
+                  <template #content>
+                    <div class="h-full flex flex-col items-center justify-center text-white">
+                      <div i="carbon-camera" class="mb-2 text-3xl" />
+                      <span class="text-sm font-bold">更换封面</span>
+                    </div>
+                  </template>
+                </Upload>
+              </div>
+            </template>
+          </div>
+
+          <!-- 标题与元数据 (位于 Banner 之上或交界处) -->
+          <!-- pb-4: 确保文字底部留白 -->
+          <div class="flex-1 pb-4 text-shadow-md">
+            <div>
+              <!-- 标题 -->
+              <h1 v-if="!gameStore.showEdit" class="mb-2 text-left text-xl text-gray-900 font-extrabold leading-none tracking-tight drop-shadow-lg sm:text-xl dark:text-white">
+                {{ game?.name }}
+              </h1>
+              <el-input v-else v-model="editGame.name" class="mb-3 text-xl font-bold" size="large" />
+
+              <!-- 别名与标签 -->
+              <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <!-- 你的 Guide 图标 -->
+                <el-icon class="drop-shadow">
+                  <Guide />
+                </el-icon>
+
+                <template v-if="!gameStore.showEdit">
+                  <span
+                    v-for="alias in game?.alias" :key="alias"
+                    class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
+                  >
+                    {{ alias }}
+                  </span>
+                </template>
+
+                <template v-else>
+                  <!-- 编辑模式下的别名逻辑 (保持不变) -->
+                  <span v-for="(alias, idx) in editGame?.alias" :key="alias" class="flex items-center whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">
+                    {{ alias }}
+                    <button class="ml-1 hover:text-red-400" @click="editGame.alias?.splice(idx, 1)">x</button>
+                  </span>
+                  <el-button type="primary" link size="small" @click="showAddAlias = true">
+                    + 别名
+                  </el-button>
+                </template>
+                <div v-if="showAddAlias" class="mt-2 flex gap-2">
+                  <el-input v-model="createAlias" size="small" placeholder="输入别名" @keyup.enter="appendAlias" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 2. 主要内容区域 (z-index 提升) -->
-    <div class="relative mx-auto max-w-[100rem] px-4 pt-8 lg:px-8 sm:px-6">
+    <div class="relative bottom-0 left-0 right-0 z-10 m-auto w-[75%] px-6 md:px-0">
       <!-- 核心布局：两栏设计 (移除了 items-start 以实现等高拉伸) -->
-      <div class="relative flex flex-col gap-8 md:flex-row">
-        <!-- [左栏] 粘性侧边栏容器：负责占位和高度拉伸 -->
+      <div class="relative flex flex-col gap-16 md:flex-row">
+        <!-- [左栏] 内容流：标题 -> 标签 -> 简介 -> Tabs -->
+        <div class="min-w-0 flex flex-1 flex-col gap-8">
+          <!-- 1. 头部信息 -->
+          <!-- 2. 标签云 (带折叠功能) -->
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                v-for="(tag, index) in (gameStore.showEdit ? editGame.tags : game.tags)"
+                v-show="gameStore.showEdit || index < TAG_LIMIT || isTagsExpanded"
+                :key="tag.id"
+                class="flex cursor-pointer items-center gap-1 border border-indigo-100 rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-600 font-medium transition hover:scale-105 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+                @click="goto(`/games?tags=${tag.id}`)"
+              >
+                #{{ tag.name }}
+                <el-icon v-if="gameStore.showEdit" class="hover:text-red-500" @click.stop="removeTag(tag.name)"><Delete /></el-icon>
+              </span>
+              <button
+                v-if="!gameStore.showEdit && !isTagsExpanded && (game.tags?.length || 0) > TAG_LIMIT"
+                class="flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 font-bold transition dark:bg-gray-700 hover:bg-gray-200 dark:text-gray-300"
+                @click="isTagsExpanded = true"
+              >
+                <el-icon class="mr-1">
+                  <More />
+                </el-icon> 还有 {{ (game.tags?.length || 0) - TAG_LIMIT }} 个
+              </button>
+              <button v-if="!gameStore.showEdit && isTagsExpanded" class="text-xs text-gray-400 hover:text-blue-500" @click="isTagsExpanded = false">
+                收起
+              </button>
+              <div v-if="gameStore.showEdit" class="flex items-center gap-2">
+                <el-select v-model="createTagID" size="small" filterable placeholder="选择标签" :empty-values="[null, undefined, 0]" class="w-32">
+                  <el-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id" />
+                </el-select>
+                <el-input v-if="showAddTag" v-model="createTag" size="small" placeholder="新建" class="w-24" @keyup.enter="appendTag(createTag)" />
+                <el-button v-else size="small" :icon="Plus" circle @click="showAddTag = true" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 简介 (带折叠) -->
+          <div class="relative border border-base rounded-2xl bg-card p-6 backdrop-blur-sm">
+            <h3 class="mb-3 text-xs text-gray-400 font-bold tracking-wider uppercase">
+              简介
+            </h3>
+            <div v-if="!gameStore.showEdit">
+              <div
+                class="overflow-hidden text-left text-gray-700 leading-relaxed transition-all duration-300 dark:text-gray-300"
+                :class="isStoryExpanded ? '' : 'line-clamp-16 max-h-100'"
+                v-html="game?.story || '<span class=\'text-gray-400 italic\'>暂无简介</span>'"
+              />
+              <div v-if="!isStoryExpanded && (game.story?.length || 0) > 100" class="absolute bottom-0 left-0 h-16 w-full flex items-end justify-center rounded-b-2xl from-white to-transparent bg-gradient-to-t pb-2 dark:from-gray-800">
+                <button class="border border-gray-100 rounded-full bg-white/90 px-4 py-1.5 text-xs text-blue-600 font-bold shadow-sm dark:border-gray-700 dark:bg-gray-800/90 dark:text-blue-400 hover:underline" @click="isStoryExpanded = true">
+                  展开阅读全文
+                </button>
+              </div>
+              <div v-else-if="isStoryExpanded" class="mt-2 text-center">
+                <button class="text-xs text-gray-400 hover:text-gray-600" @click="isStoryExpanded = false">
+                  收起
+                </button>
+              </div>
+            </div>
+            <el-input v-else v-model="editGame.story" type="textarea" :rows="12" placeholder="输入简介..." />
+          </div>
+
+          <!-- 4. Tabs 导航与内容 -->
+          <div>
+            <!-- Sticky Tab Header -->
+            <div class="sticky top--4 z-20 mb-6 border-b border-base bg-card px-4 pt-2 backdrop-blur -mx-4 md:mx-0 md:rounded-lg md:px-3">
+              <div class="no-scrollbar flex gap-8 overflow-x-auto px-4">
+                <button
+                  v-for="tab in tabs" :key="tab" class="whitespace-nowrap border-b-2 px-1 pb-2 text-base font-medium transition-colors"
+                  :class="activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+                  @click="activeTab = tab"
+                >
+                  {{ tab }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="min-h-[300px]">
+              <!-- 角色 Tab -->
+              <div v-show="activeTab === '角色'" class="animate-fade-in">
+                <div v-if="gameStore.showEdit" class="mb-4 flex justify-end">
+                  <el-button type="primary" :icon="Plus" @click="addCharacter">
+                    添加角色
+                  </el-button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                  <div
+                    v-for="(char, idx) in (gameStore.showEdit ? editGame.characters : game.characters)"
+                    :key="char.id"
+                    class="group relative cursor-pointer overflow-hidden border border-gray-100 rounded-xl bg-white shadow-sm transition dark:border-gray-700 dark:bg-gray-800 hover:shadow-md"
+                    @click="!gameStore.showEdit && openCharacterDetail(char)"
+                  >
+                    <div class="relative aspect-square overflow-hidden bg-gray-200">
+                      <img :src="imageUrl(char.cover)" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+                      <div class="absolute bottom-0 left-0 w-full from-black/90 to-transparent bg-gradient-to-t p-3 pt-8">
+                        <div class="text-xs text-white font-medium opacity-90">
+                          CV: {{ char.cv?.name || '未知' }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="p-3">
+                      <div class="mb-1 flex items-center justify-between">
+                        <div class="flex-1 truncate text-gray-900 font-bold dark:text-white" :title="char.name">
+                          {{ char.name }}
+                        </div>
+                        <el-icon v-if="char.gender === 'female'" color="pink">
+                          <Female />
+                        </el-icon>
+                        <el-icon v-else-if="char.gender === 'male'" color="#409EFF">
+                          <Male />
+                        </el-icon>
+                      </div>
+                      <p class="line-clamp-2 h-8 text-xs text-gray-500 dark:text-gray-400" v-html="char.summary || '暂无描述'" />
+                    </div>
+
+                    <div
+                      v-if="gameStore.showEdit"
+                      class="character-container absolute right-1 top-1 z-10 rounded-full transition-all duration-300"
+                    >
+                      <div
+                        class="z-10 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md hover:bg-primary"
+                        @click="showCharacterEdit = true; editGameCharacterIdx = idx"
+                      >
+                        <div i="carbon-edit" class="h-4 w-4" />
+                      </div>
+                      <div
+                        class="delete-btn absolute top-0 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
+                        @click="() => { if (editGame.characters) editGame.characters.splice(idx, 1) }"
+                      >
+                        <div i="carbon-trash-can" class="h-4 w-4" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 图片集 Tab -->
+              <div v-show="activeTab === '图片集'" class="animate-fade-in">
+                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 sm:grid-cols-3">
+                  <div v-if="gameStore.showEdit" class="aspect-video flex flex-col items-center justify-center rounded-xl bg-gray-50 transition dark:bg-gray-800/50">
+                    <Upload
+                      :action="getUploadUrl()"
+                      class="h-full w-full"
+                      @success="handleImageUploadSuccess"
+                    />
+                  </div>
+                  <div v-for="(img, i) in (gameStore.showEdit ? editGame.images : game.images)" :key="i" class="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-gray-100">
+                    <el-image
+                      :src="imageUrl(img)"
+                      class="h-full w-full object-cover transition"
+                      fit="cover"
+                      :preview-src-list="game.images?.map(u => imageUrl(u))"
+                      :initial-index="i"
+                      loading="lazy"
+                    />
+                    <div
+                      v-if="gameStore.showEdit"
+                      class="absolute right-1 top-1 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
+                      @click="rmImage(img)"
+                    >
+                      <div i="carbon-trash-can" class="h-4 w-4" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 参与成员 Tab -->
+              <div v-show="activeTab === '参与成员'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="gameStore.showEdit" class="mb-4 flex justify-end">
+                  <el-button type="primary" icon="Plus" @click="addStaff">
+                    添加成员
+                  </el-button>
+                </div>
+                <div class="space-y-6">
+                  <div v-for="(roleGroup, roleName) in { writer: '剧本', painter: '原画', cv: '声优', music: '音乐' }" :key="roleName">
+                    <h4 class="mb-3 border-l-4 border-blue-500 pl-3 text-left text-gray-900 font-bold dark:text-white">
+                      {{ roleName }}
+                    </h4>
+                    <div class="flex flex-wrap gap-3">
+                      <template v-for="(s, idx) in (gameStore.showEdit ? editGame.staff : game.staff)" :key="s.id">
+                        <div v-if="s.relation.includes(roleName as any)" class="flex items-center gap-2 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-700/50">
+                          <el-avatar :size="32" :src="imageUrl(s.cover)" />
+                          <span class="text-sm font-medium">{{ s.name }}</span>
+                          <div v-if="gameStore.showEdit">
+                            <el-button size="small" type="primary" link :icon="Edit" @click="showStaffEdit = true; editGameStaffIdx = idx" />
+                            <el-button size="small" type="danger" link :icon="Close" @click="editGame.staff?.splice(idx, 1)" />
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 相关链接 Tab -->
+              <div v-show="activeTab === '相关链接'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="!gameStore.showEdit" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" class="group flex items-center border border-gray-200 rounded-lg p-4 transition dark:border-gray-700 hover:border-blue-500 hover:shadow-md">
+                    <div class="mr-3 rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30"><el-icon :size="20"><Connection /></el-icon></div>
+                    <div>
+                      <div class="text-left text-gray-900 font-bold dark:text-white group-hover:text-blue-600">{{ link.name }}</div>
+                      <div class="max-w-[200px] truncate text-left text-xs text-gray-400">{{ link.url }}</div>
+                    </div>
+                  </a>
+                </div>
+                <div v-else>
+                  <div v-for="(l, i) in editGame.links" :key="i" class="mb-2 flex gap-2">
+                    <el-input v-model="l.name" placeholder="名称" />
+                    <el-input v-model="l.url" placeholder="URL" />
+                    <el-button type="danger" :icon="Delete" circle @click="editGame.links?.splice(i, 1)" />
+                  </div>
+                  <el-button type="primary" plain :icon="Plus" class="mt-2 w-full" @click="() => { if (!editGame.links) editGame.links = []; editGame.links.push({ name: '', url: '', type: '' }) }">
+                    添加链接
+                  </el-button>
+                </div>
+              </div>
+
+              <!-- 其他信息 Tab -->
+              <div v-show="activeTab === '其他信息'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div v-if="!gameStore.showEdit" class="max-w-none prose dark:prose-invert" v-html="game.other_info" />
+                <el-input v-else v-model="editGame.other_info" type="textarea" :rows="10" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- [右栏] 粘性侧边栏容器：负责占位和高度拉伸 -->
         <div class="relative w-full flex-shrink-0 md:w-80">
           <!-- 视觉分割线 (可选) -->
           <div class="absolute bottom-0 top-0 hidden w-px bg-gray-200/50 -right-4 md:block dark:bg-gray-800/50" />
 
           <!-- 真正的内容层：负责吸顶 (Sticky) -->
           <div class="md:sticky md:top-24 space-y-6">
-            <!-- 封面图 -->
-            <div class="group relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-gray-200 shadow-2xl ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/10">
-              <img
-                v-if="!gameStore.showEdit"
-                :src="imageUrl(game?.cover)"
-                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              >
-              <!-- 编辑模式：更换封面 -->
-              <template v-else>
-                <img
-                  :src="imageUrl(editGame?.cover)"
-                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                >
-                <div class="absolute inset-0 flex flex-col cursor-pointer items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                  <!-- <input id="cover-uploader" type="file" accept=".jpg, .jpeg, .png" style="display: none;" /> -->
-                  <Upload class="absolute top-0 h-full w-full" :action="getUploadUrl()" @success="(data) => { editGame.cover = data.data.path }">
-                    <template #content>
-                      <div class="flex flex-col items-center">
-                        <el-icon :size="32" color="#fff">
-                          <Camera />
-                        </el-icon>
-                        <span class="mt-2 text-white font-bold">更换封面</span>
-                        <div i="carbon-trash-can" class="z-20 mt-2 hover:text-red" @click.stop="editGame.cover = game.cover" />
-                      </div>
-                    </template>
-                  </Upload>
-                </div>
-              </template>
-            </div>
-
-            <!-- 快捷按钮组 -->
-            <div class="flex gap-3">
-              <button class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-white font-bold shadow-blue-500/30 shadow-lg transition active:scale-95 hover:bg-blue-700">
-                <el-icon><Monitor /></el-icon> 开始游戏
-              </button>
-              <button class="flex items-center border border-gray-200 rounded-lg bg-white p-2.5 text-yellow-500 shadow transition active:scale-95 dark:border-gray-700 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <el-icon :size="20">
-                  <Star />
-                </el-icon>
-              </button>
-            </div>
-
             <!-- 硬核信息表 (Info Table) -->
             <div class="border border-base rounded-xl bg-card p-5 text-sm shadow-sm backdrop-blur-md">
               <h4 class="mb-4 text-xs text-gray-400 font-bold tracking-wider uppercase">
@@ -851,272 +1121,6 @@ function rmImage(img: string) {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- [右栏] 内容流：标题 -> 标签 -> 简介 -> Tabs -->
-        <div class="min-w-0 flex flex-1 flex-col gap-8">
-          <!-- 1. 头部信息 -->
-          <div>
-            <h1 v-if="!gameStore.showEdit" class="mb-3 text-4xl text-gray-900 font-extrabold leading-tight tracking-tight drop-shadow-sm md:text-5xl dark:text-white">
-              {{ game?.name }}
-            </h1>
-            <el-input v-else v-model="editGame.name" class="mb-3 text-4xl font-bold" size="large" />
-
-            <!-- 别名显示 -->
-            <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <el-icon><Guide /></el-icon>
-              <template v-if="!gameStore.showEdit">
-                <span
-                  v-for="alias in game?.alias" :key="alias"
-                  class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
-                >
-                  {{ alias }}
-                </span>
-              </template>
-              <template v-else>
-                <span
-                  v-for="(alias, idx) in editGame?.alias" :key="alias"
-                  class="flex items-center whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800"
-                >
-                  {{ alias }}
-                  <button class="ml-1 flex cursor-pointer items-center rounded-full hover:bg-gray-700" @click="editGame.alias?.splice(idx, 1)">
-                    <div i="carbon-close" class="z-20 h-4 w-4" />
-                  </button>
-                </span>
-                <el-button type="primary" link size="small" @click="showAddAlias = true">
-                  + 别名
-                </el-button>
-              </template>
-            </div>
-            <div v-if="showAddAlias" class="mt-2 flex gap-2">
-              <el-input v-model="createAlias" size="small" placeholder="输入别名" @keyup.enter="appendAlias" />
-            </div>
-          </div>
-
-          <!-- 2. 标签云 (带折叠功能) -->
-          <div>
-            <div class="flex flex-wrap items-center gap-2">
-              <span
-                v-for="(tag, index) in (gameStore.showEdit ? editGame.tags : game.tags)"
-                v-show="gameStore.showEdit || index < TAG_LIMIT || isTagsExpanded"
-                :key="tag.id"
-                class="flex cursor-pointer items-center gap-1 border border-indigo-100 rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-600 font-medium transition hover:scale-105 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
-                @click="goto(`/games?tags=${tag.id}`)"
-              >
-                #{{ tag.name }}
-                <el-icon v-if="gameStore.showEdit" class="hover:text-red-500" @click.stop="removeTag(tag.name)"><Delete /></el-icon>
-              </span>
-              <button
-                v-if="!gameStore.showEdit && !isTagsExpanded && (game.tags?.length || 0) > TAG_LIMIT"
-                class="flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 font-bold transition dark:bg-gray-700 hover:bg-gray-200 dark:text-gray-300"
-                @click="isTagsExpanded = true"
-              >
-                <el-icon class="mr-1">
-                  <More />
-                </el-icon> 还有 {{ (game.tags?.length || 0) - TAG_LIMIT }} 个
-              </button>
-              <button v-if="!gameStore.showEdit && isTagsExpanded" class="text-xs text-gray-400 hover:text-blue-500" @click="isTagsExpanded = false">
-                收起
-              </button>
-              <div v-if="gameStore.showEdit" class="flex items-center gap-2">
-                <el-select v-model="createTagID" size="small" filterable placeholder="选择标签" :empty-values="[null, undefined, 0]" class="w-32">
-                  <el-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id" />
-                </el-select>
-                <el-input v-if="showAddTag" v-model="createTag" size="small" placeholder="新建" class="w-24" @keyup.enter="appendTag(createTag)" />
-                <el-button v-else size="small" :icon="Plus" circle @click="showAddTag = true" />
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. 简介 (带折叠) -->
-          <div class="relative border border-base rounded-2xl bg-card p-6 backdrop-blur-sm">
-            <h3 class="mb-3 text-xs text-gray-400 font-bold tracking-wider uppercase">
-              简介
-            </h3>
-            <div v-if="!gameStore.showEdit">
-              <div
-                class="overflow-hidden text-left text-gray-700 leading-relaxed transition-all duration-300 dark:text-gray-300"
-                :class="isStoryExpanded ? '' : 'line-clamp-16 max-h-100'"
-                v-html="game?.story || '<span class=\'text-gray-400 italic\'>暂无简介</span>'"
-              />
-              <div v-if="!isStoryExpanded && (game.story?.length || 0) > 100" class="absolute bottom-0 left-0 h-16 w-full flex items-end justify-center rounded-b-2xl from-white to-transparent bg-gradient-to-t pb-2 dark:from-gray-800">
-                <button class="border border-gray-100 rounded-full bg-white/90 px-4 py-1.5 text-xs text-blue-600 font-bold shadow-sm dark:border-gray-700 dark:bg-gray-800/90 dark:text-blue-400 hover:underline" @click="isStoryExpanded = true">
-                  展开阅读全文
-                </button>
-              </div>
-              <div v-else-if="isStoryExpanded" class="mt-2 text-center">
-                <button class="text-xs text-gray-400 hover:text-gray-600" @click="isStoryExpanded = false">
-                  收起
-                </button>
-              </div>
-            </div>
-            <el-input v-else v-model="editGame.story" type="textarea" :rows="12" placeholder="输入简介..." />
-          </div>
-
-          <!-- 4. Tabs 导航与内容 -->
-          <div>
-            <!-- Sticky Tab Header -->
-            <div class="sticky top--4 z-20 mb-6 border-b border-base bg-card px-4 pt-2 backdrop-blur -mx-4 md:mx-0 md:rounded-lg md:px-3">
-              <div class="no-scrollbar flex gap-8 overflow-x-auto px-4">
-                <button
-                  v-for="tab in tabs" :key="tab" class="whitespace-nowrap border-b-2 px-1 pb-2 text-base font-medium transition-colors"
-                  :class="activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
-                  @click="activeTab = tab"
-                >
-                  {{ tab }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Tab Contents -->
-            <div class="min-h-[300px]">
-              <!-- 角色 Tab -->
-              <div v-show="activeTab === '角色'" class="animate-fade-in">
-                <div v-if="gameStore.showEdit" class="mb-4 flex justify-end">
-                  <el-button type="primary" :icon="Plus" @click="addCharacter">
-                    添加角色
-                  </el-button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-                  <div
-                    v-for="(char, idx) in (gameStore.showEdit ? editGame.characters : game.characters)"
-                    :key="char.id"
-                    class="group relative cursor-pointer overflow-hidden border border-gray-100 rounded-xl bg-white shadow-sm transition dark:border-gray-700 dark:bg-gray-800 hover:shadow-md"
-                    @click="!gameStore.showEdit && openCharacterDetail(char)"
-                  >
-                    <div class="relative aspect-square overflow-hidden bg-gray-200">
-                      <img :src="imageUrl(char.cover)" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
-                      <div class="absolute bottom-0 left-0 w-full from-black/90 to-transparent bg-gradient-to-t p-3 pt-8">
-                        <div class="text-xs text-white font-medium opacity-90">
-                          CV: {{ char.cv?.name || '未知' }}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="p-3">
-                      <div class="mb-1 flex items-center justify-between">
-                        <div class="flex-1 truncate text-gray-900 font-bold dark:text-white" :title="char.name">
-                          {{ char.name }}
-                        </div>
-                        <el-icon v-if="char.gender === 'female'" color="pink">
-                          <Female />
-                        </el-icon>
-                        <el-icon v-else-if="char.gender === 'male'" color="#409EFF">
-                          <Male />
-                        </el-icon>
-                      </div>
-                      <p class="line-clamp-2 h-8 text-xs text-gray-500 dark:text-gray-400" v-html="char.summary || '暂无描述'" />
-                    </div>
-
-                    <div
-                      v-if="gameStore.showEdit"
-                      class="character-container absolute right-1 top-1 z-10 rounded-full transition-all duration-300"
-                    >
-                      <div
-                        class="z-10 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md hover:bg-primary"
-                        @click="showCharacterEdit = true; editGameCharacterIdx = idx"
-                      >
-                        <div i="carbon-edit" class="h-4 w-4" />
-                      </div>
-                      <div
-                        class="delete-btn absolute top-0 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
-                        @click="() => { if (editGame.characters) editGame.characters.splice(idx, 1) }"
-                      >
-                        <div i="carbon-trash-can" class="h-4 w-4" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 图片集 Tab -->
-              <div v-show="activeTab === '图片集'" class="animate-fade-in">
-                <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 sm:grid-cols-3">
-                  <div v-if="gameStore.showEdit" class="aspect-video flex flex-col items-center justify-center rounded-xl bg-gray-50 transition dark:bg-gray-800/50">
-                    <Upload
-                      :action="getUploadUrl()"
-                      class="h-full w-full"
-                      @success="handleImageUploadSuccess"
-                    />
-                  </div>
-                  <div v-for="(img, i) in (gameStore.showEdit ? editGame.images : game.images)" :key="i" class="group relative aspect-video cursor-pointer overflow-hidden rounded-xl bg-gray-100">
-                    <el-image
-                      :src="imageUrl(img)"
-                      class="h-full w-full object-cover transition"
-                      fit="cover"
-                      :preview-src-list="game.images?.map(u => imageUrl(u))"
-                      :initial-index="i"
-                      loading="lazy"
-                    />
-                    <div
-                      v-if="gameStore.showEdit"
-                      class="absolute right-1 top-1 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
-                      @click="rmImage(img)"
-                    >
-                      <div i="carbon-trash-can" class="h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 参与成员 Tab -->
-              <div v-show="activeTab === '参与成员'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div v-if="gameStore.showEdit" class="mb-4 flex justify-end">
-                  <el-button type="primary" icon="Plus" @click="addStaff">
-                    添加成员
-                  </el-button>
-                </div>
-                <div class="space-y-6">
-                  <div v-for="(roleGroup, roleName) in { writer: '剧本', painter: '原画', cv: '声优', music: '音乐' }" :key="roleName">
-                    <h4 class="mb-3 border-l-4 border-blue-500 pl-3 text-left text-gray-900 font-bold dark:text-white">
-                      {{ roleName }}
-                    </h4>
-                    <div class="flex flex-wrap gap-3">
-                      <template v-for="(s, idx) in (gameStore.showEdit ? editGame.staff : game.staff)" :key="s.id">
-                        <div v-if="s.relation.includes(roleName as any)" class="flex items-center gap-2 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-700/50">
-                          <el-avatar :size="32" :src="imageUrl(s.cover)" />
-                          <span class="text-sm font-medium">{{ s.name }}</span>
-                          <div v-if="gameStore.showEdit">
-                            <el-button size="small" type="primary" link :icon="Edit" @click="showStaffEdit = true; editGameStaffIdx = idx" />
-                            <el-button size="small" type="danger" link :icon="Close" @click="editGame.staff?.splice(idx, 1)" />
-                          </div>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 相关链接 Tab -->
-              <div v-show="activeTab === '相关链接'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div v-if="!gameStore.showEdit" class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" class="group flex items-center border border-gray-200 rounded-lg p-4 transition dark:border-gray-700 hover:border-blue-500 hover:shadow-md">
-                    <div class="mr-3 rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30"><el-icon :size="20"><Connection /></el-icon></div>
-                    <div>
-                      <div class="text-left text-gray-900 font-bold dark:text-white group-hover:text-blue-600">{{ link.name }}</div>
-                      <div class="max-w-[200px] truncate text-left text-xs text-gray-400">{{ link.url }}</div>
-                    </div>
-                  </a>
-                </div>
-                <div v-else>
-                  <div v-for="(l, i) in editGame.links" :key="i" class="mb-2 flex gap-2">
-                    <el-input v-model="l.name" placeholder="名称" />
-                    <el-input v-model="l.url" placeholder="URL" />
-                    <el-button type="danger" :icon="Delete" circle @click="editGame.links?.splice(i, 1)" />
-                  </div>
-                  <el-button type="primary" plain :icon="Plus" class="mt-2 w-full" @click="() => { if (!editGame.links) editGame.links = []; editGame.links.push({ name: '', url: '', type: '' }) }">
-                    添加链接
-                  </el-button>
-                </div>
-              </div>
-
-              <!-- 其他信息 Tab -->
-              <div v-show="activeTab === '其他信息'" class="animate-fade-in border border-gray-100 rounded-xl bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div v-if="!gameStore.showEdit" class="max-w-none prose dark:prose-invert" v-html="game.other_info" />
-                <el-input v-else v-model="editGame.other_info" type="textarea" :rows="10" />
               </div>
             </div>
           </div>

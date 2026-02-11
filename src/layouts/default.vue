@@ -45,7 +45,7 @@ const toggleCollapse = () => (isCollapsed.value = !isCollapsed.value)
         class="mainRef"
         text="center main overflow-auto"
         style="height: calc(100vh - 64px);"
-        flex-1 overflow-auto px-6 pt-6
+        flex-1 overflow-auto
       >
         <router-view />
       </div>
