@@ -9,8 +9,14 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Card: typeof import('./components/Card.vue')['default']
+    CharacterCard: typeof import('./components/game/CharacterCard.vue')['default']
+    CharacterDetailDialog: typeof import('./components/game/CharacterDetailDialog.vue')['default']
+    EntityEditDrawer: typeof import('./components/game/EntityEditDrawer.vue')['default']
     GameCard: typeof import('./components/GameCard.vue')['default']
+    GameHero: typeof import('./components/game/GameHero.vue')['default']
     GameMergeDialog: typeof import('./components/GameMergeDialog.vue')['default']
+    GameMetaBar: typeof import('./components/game/GameMetaBar.vue')['default']
+    GameTagCloud: typeof import('./components/game/GameTagCloud.vue')['default']
     README: typeof import('./components/README.md')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
