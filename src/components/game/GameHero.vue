@@ -39,6 +39,7 @@ function appendAlias() {
       <img
         v-if="game?.cover"
         :src="imageUrl(game?.cover)"
+        :alt="`${game?.name} banner`"
         class="h-full w-full object-cover object-top"
       >
       <!-- 双层渐变遮罩 -->
@@ -55,11 +56,12 @@ function appendAlias() {
           <img
             v-if="!showEdit"
             :src="imageUrl(game?.cover)"
+            :alt="`${game?.name} 封面`"
             class="h-full w-full object-cover transition-transform duration-700 group-hover:rotate-1 group-hover:scale-110"
           >
           <!-- 编辑模式：更换封面 -->
           <template v-else>
-            <img :src="imageUrl(editGame?.cover)" class="h-full w-full object-cover opacity-40 blur-sm">
+            <img :src="imageUrl(editGame?.cover)" :alt="`${editGame?.name} 封面`" class="h-full w-full object-cover opacity-40 blur-sm">
             <div class="absolute inset-0 flex flex-col cursor-pointer items-center justify-center bg-black/50 transition-opacity hover:bg-black/70">
               <Upload class="absolute inset-0" :action="getUploadUrl()" @success="(data: any) => { editGame.cover = data.data.path }">
                 <template #content>

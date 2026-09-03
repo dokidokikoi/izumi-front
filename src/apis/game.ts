@@ -12,6 +12,7 @@ import type {
   ScraperDetailReq,
   ScraperSearchReq,
   Staff,
+  Tag,
   UpdatePolicyReq,
 } from '~/types'
 import request from '~/utils/request'
@@ -122,14 +123,26 @@ export const tagApi = {
   create(name: string) {
     return request.post('/tags', { name })
   },
-  list() {
-    return request.get('/tags')
+  list(ns = '', key = '', page = 1, page_size = 1000) {
+    return request.get(`/tags?ns=${ns}&key=${key}&page=${page}&page_size=${page_size}`)
   },
   delete(ids: string[]) {
     return request.delete(`/tags`, { ids })
   },
-  update(id: number, name: string) {
-    return request.patch(`/tags`, { id, name })
+  update(data: Partial<Tag>) {
+    return request.patch(`/tags`, data)
+  },
+  sync() {
+    return request.post(`/tags/ehtag/sync`)
+  },
+  getDecided() {
+    return request.get(`/tags/decided`)
+  },
+  getETag(ns: string, keyword: string) {
+    return request.get(`/tags/ehtag?ns=${ns}&keyword=${keyword}`)
+  },
+  patchDecided(data: Tag) {
+    return request.post(`/tags/decided`, data)
   },
 }
 

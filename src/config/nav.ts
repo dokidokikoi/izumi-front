@@ -10,6 +10,7 @@ export const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/', icon: 'i-carbon-dashboard' },
   { name: 'Setting', path: '/policy', icon: 'i-carbon-settings' },
   { name: 'Library', path: '/games', icon: 'i-carbon-game-console' },
+  { name: 'Tags', path: '/tags', icon: 'i-carbon-tag' },
 
   { divider: true },
 

@@ -5,7 +5,10 @@ export type UserModule = (ctx: ViteSSGContext) => void
 // 游戏标签
 export interface Tag {
   id: number
+  ns: string
+  key: string
   name: string
+  intro: string
   created_at: string
   updated_at: string
 }

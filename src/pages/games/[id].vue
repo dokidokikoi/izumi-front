@@ -165,8 +165,8 @@ function rmImage(img: string) {
         @goto="goto" @add-ins="showAddGameIns = true"
       />
 
-      <!-- 核心内容：全宽布局 -->
-      <div class="flex-1">
+      <!-- 核心内容：全宽布局,统一 8 单位垂直节奏 -->
+      <div class="flex-1 space-y-8">
         <!-- 1. 标签云 (带折叠功能) -->
         <GameTagCloud v-model:edit-game="editGame" v-model:tags="tags" :game="game" :show-edit="gameStore.showEdit" @goto="goto" />
 
@@ -184,9 +184,9 @@ function rmImage(img: string) {
           </div>
           <div v-if="!gameStore.showEdit">
             <div
-              class="prose-sm max-w-none overflow-hidden text-left text-gray-700 leading-relaxed transition-all duration-300 prose dark:prose-invert"
+              class="story-prose prose-sm max-w-none overflow-hidden text-left leading-relaxed transition-all duration-300 prose dark:prose-invert"
               :class="isStoryExpanded ? '' : 'line-clamp-[18] max-h-[400px]'"
-              v-html="game?.story || '<span class=\'text-gray-400 italic\'>暂无简介</span>'"
+              v-html="game?.story || '<span class=\'text-gray-500 italic dark:text-gray-400\'>暂无简介</span>'"
             />
             <div v-if="!isStoryExpanded && (game.story?.length || 0) > 100" class="absolute bottom-0 left-0 h-24 w-full flex items-end justify-center rounded-b-2xl from-white via-white/90 to-transparent bg-gradient-to-t pb-6 dark:from-gray-800 dark:via-gray-800/90">
               <button class="group inline-flex items-center gap-2 rounded-full from-blue-500 to-indigo-500 bg-gradient-to-r px-6 py-2.5 text-sm text-white font-semibold shadow-blue-500/25 shadow-lg transition-all hover:scale-105 hover:shadow-blue-500/30 hover:shadow-xl" @click="isStoryExpanded = true">
@@ -207,30 +207,36 @@ function rmImage(img: string) {
 
         <!-- 3. Tabs 导航与内容 -->
         <div>
-          <!-- Sticky Tab Header -->
-          <div class="sticky top-4 z-20 mb-6 rounded-2xl bg-white/80 px-4 pt-2 shadow-sm backdrop-blur-md -mx-4 md:mx-0 dark:bg-gray-800/80 md:px-0 md:shadow-none">
-            <div class="no-scrollbar flex gap-1 overflow-x-auto px-2 md:px-0">
+          <!-- Sticky Tab Header(胶囊式) -->
+          <div class="sticky top-0 z-20 border-b border-gray-200/60 bg-white/75 py-3 backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-900/75">
+            <div class="no-scrollbar flex gap-2 overflow-x-auto" role="tablist">
               <button
-                v-for="tab in tabs" :key="tab" class="relative whitespace-nowrap px-5 py-3 text-base font-medium transition-all"
+                v-for="tab in tabs" :key="tab" role="tab" :aria-selected="activeTab === tab"
+                class="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-2 focus-visible:outline-blue-500"
                 :class="activeTab === tab
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+                  ? 'from-blue-500 to-indigo-500 bg-gradient-to-r text-white shadow-md shadow-blue-500/25'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200'"
                 @click="activeTab = tab"
               >
                 {{ tab }}
-                <span v-if="activeTab === tab" class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full from-blue-500 to-indigo-500 bg-gradient-to-r" />
               </button>
             </div>
           </div>
 
           <!-- Tab Contents -->
-          <div class="min-h-[300px]">
+          <div class="min-h-[300px] pt-6">
             <!-- 角色 Tab -->
             <div v-show="activeTab === '角色'" class="animate-fade-in">
               <div v-if="gameStore.showEdit" class="mb-6 flex justify-end">
                 <el-button type="primary" :icon="Plus" class="rounded-xl shadow-blue-500/25 shadow-lg" @click="addCharacter">
                   添加角色
                 </el-button>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-if="!(gameStore.showEdit ? editGame.characters : game.characters)?.length" class="flex flex-col items-center justify-center border border-gray-200 rounded-2xl border-dashed py-16 text-gray-300 dark:border-gray-700 dark:text-gray-600">
+                <div i="carbon-user-avatar-filled-alt" class="mb-3 h-12 w-12" />
+                <span class="text-sm">暂无角色信息</span>
               </div>
 
               <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
@@ -263,12 +269,17 @@ function rmImage(img: string) {
                     </div>
                   </Upload>
                 </div>
+                <!-- 空状态 -->
+                <div v-if="!(gameStore.showEdit ? editGame.images : game.images)?.length && !gameStore.showEdit" class="col-span-full flex flex-col items-center justify-center border border-gray-200 rounded-2xl border-dashed py-16 text-gray-300 dark:border-gray-700 dark:text-gray-600">
+                  <div i="carbon-image" class="mb-3 h-12 w-12" />
+                  <span class="text-sm">暂无图片,敬请期待</span>
+                </div>
                 <div v-for="(img, i) in (gameStore.showEdit ? editGame.images : game.images)" :key="i" class="group relative aspect-video cursor-pointer overflow-hidden rounded-2xl bg-gray-100">
                   <el-image
                     :src="imageUrl(img)"
                     class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                     fit="cover"
-                    :preview-src-list="game.images?.map(u => imageUrl(u))"
+                    :preview-src-list="(gameStore.showEdit ? editGame.images : game.images)?.map(u => imageUrl(u))"
                     :initial-index="i"
                     loading="lazy"
                   />
@@ -319,7 +330,12 @@ function rmImage(img: string) {
             <!-- 相关链接 Tab -->
             <div v-show="activeTab === '相关链接'" class="animate-fade-in rounded-2xl bg-white/80 p-6 shadow-sm backdrop-blur-sm dark:bg-gray-800/60">
               <div v-if="!gameStore.showEdit" class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" class="group flex items-center gap-4 border border-gray-200 rounded-xl p-4 transition-all dark:border-gray-700 hover:border-blue-400 hover:shadow-blue-500/10 hover:shadow-lg">
+                <!-- 空状态 -->
+                <div v-if="!game.links?.length" class="col-span-full flex flex-col items-center justify-center border border-gray-200 rounded-2xl border-dashed py-16 text-gray-300 dark:border-gray-700 dark:text-gray-600">
+                  <div i="carbon-link" class="mb-3 h-12 w-12" />
+                  <span class="text-sm">暂无相关链接</span>
+                </div>
+                <a v-for="link in game.links" :key="link.url" :href="link.url" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-4 border border-gray-200 rounded-xl p-4 transition-all dark:border-gray-700 hover:border-blue-400 hover:shadow-blue-500/10 hover:shadow-lg">
                   <div class="rounded-xl from-blue-500 to-indigo-500 bg-gradient-to-br p-3 text-white shadow-md transition-transform group-hover:scale-110">
                     <el-icon :size="22"><Connection /></el-icon>
                   </div>
@@ -346,7 +362,11 @@ function rmImage(img: string) {
 
             <!-- 其他信息 Tab -->
             <div v-show="activeTab === '其他信息'" class="animate-fade-in rounded-2xl bg-white/80 p-6 shadow-sm backdrop-blur-sm dark:bg-gray-800/60">
-              <div v-if="!gameStore.showEdit" class="prose-sm max-w-none prose dark:prose-invert" v-html="game.other_info" />
+              <div v-if="!gameStore.showEdit && game.other_info" class="prose-sm max-w-none prose dark:prose-invert" v-html="game.other_info" />
+              <div v-else-if="!gameStore.showEdit" class="flex flex-col items-center justify-center border border-gray-200 rounded-2xl border-dashed py-16 text-gray-300 dark:border-gray-700 dark:text-gray-600">
+                <div i="carbon-document-blank" class="mb-3 h-12 w-12" />
+                <span class="text-sm">暂无其他信息</span>
+              </div>
               <el-input v-else v-model="editGame.other_info" type="textarea" :rows="10" />
             </div>
           </div>
@@ -420,28 +440,42 @@ function rmImage(img: string) {
     type="staff"
   />
 
-  <div
-    class="action-container fixed bottom-[120px] left-[calc(100%-127px)] z-20 flex items-center rounded-full bg-card p1 shadow-md transition-all duration-300"
-  >
-    <!-- Edit 按钮 -->
-    <div
-      class="edit-btn z-10 flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md hover:bg-primary"
-      @click="gameStore.showEdit = !gameStore.showEdit"
-    >
-      <div i="carbon-edit" class="h-6 w-6" />
-    </div>
-
-    <!-- Save 按钮（默认隐藏在左边） -->
-    <div
-      class="save-btn absolute flex cursor-pointer items-center rounded-full bg-hover p2 shadow-md transition-all duration-300 hover:bg-primary"
-      @click="showUpdate = true"
-    >
-      <div i="carbon-save" class="h-6 w-6" />
-    </div>
+  <!-- 浮动操作按钮(编辑/保存) -->
+  <div class="fixed bottom-24 right-6 z-20 flex flex-col items-center gap-3">
+    <el-tooltip content="保存修改" placement="left" :show-after="300">
+      <button
+        v-if="gameStore.showEdit"
+        class="h-12 w-12 flex cursor-pointer items-center justify-center rounded-full from-blue-500 to-indigo-500 bg-gradient-to-br text-white shadow-blue-500/30 shadow-lg transition-all hover:scale-110 focus-visible:outline-2 focus-visible:outline-blue-500"
+        aria-label="保存修改"
+        @click="showUpdate = true"
+      >
+        <div i="carbon-save" class="h-5 w-5" />
+      </button>
+    </el-tooltip>
+    <el-tooltip :content="gameStore.showEdit ? '退出编辑' : '编辑游戏'" placement="left" :show-after="300">
+      <button
+        class="h-12 w-12 flex cursor-pointer items-center justify-center border border-gray-200 rounded-full bg-white/90 text-gray-600 shadow-lg backdrop-blur-sm transition-all hover:scale-110 dark:border-gray-700 hover:border-blue-400 dark:bg-gray-800/90 dark:text-gray-300 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-blue-500 dark:hover:text-blue-400"
+        :aria-label="gameStore.showEdit ? '退出编辑' : '编辑游戏'"
+        @click="gameStore.showEdit = !gameStore.showEdit"
+      >
+        <div i="carbon-edit" class="h-5 w-5" />
+      </button>
+    </el-tooltip>
   </div>
 </template>
 
 <style scoped>
+/* 简介正文:加深 prose 默认正文色,保证与卡片背景的对比度 */
+.story-prose {
+  --tw-prose-body: theme('colors.gray.800');
+  --tw-prose-quotes: theme('colors.gray.700');
+}
+
+.dark .story-prose {
+  --tw-prose-body: theme('colors.gray.200');
+  --tw-prose-quotes: theme('colors.gray.300');
+}
+
 /* 隐藏滚动条但允许滚动 */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -465,28 +499,6 @@ function rmImage(img: string) {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* 操作按钮容器 */
-.action-container {
-  width: 56px;
-  height: 56px;
-  overflow: visible;
-  position: fixed;
-}
-
-.action-container .save-btn {
-  left: 0;
-  opacity: 0;
-}
-
-.action-container:hover {
-  width: 110px;
-}
-
-.action-container:hover .save-btn {
-  left: 60px;
-  opacity: 1;
 }
 
 /* Element Plus 样式覆盖 */

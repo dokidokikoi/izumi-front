@@ -334,7 +334,7 @@ function go(id: number) {
             v-for="game in games"
             :key="game.id"
             :game="game"
-            class="group/card transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-indigo-500/10"
+            class="group/card"
             @click="go(game.id)"
           />
         </div>

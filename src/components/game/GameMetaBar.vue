@@ -52,7 +52,7 @@ watch(createCategoryID, (newVal) => {
 
 <template>
   <!-- 紧凑信息横条 -->
-  <div class="mb-8 overflow-x-auto -mx-4 md:mx-0">
+  <div class="overflow-x-auto -mx-4 md:mx-0">
     <div class="no-scrollbar flex gap-2 px-4 md:px-0">
       <!-- 品牌 -->
       <div class="group flex shrink-0 items-center gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm backdrop-blur-sm transition dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800">

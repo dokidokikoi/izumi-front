@@ -17,11 +17,13 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="group relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-md transition-all duration-300 dark:bg-gray-800 hover:shadow-indigo-500/20 hover:shadow-xl hover:-translate-y-1"
+    class="group relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-md transition-all duration-300 dark:bg-gray-800 hover:shadow-indigo-500/20 hover:shadow-xl focus-within:ring-2 focus-within:ring-blue-500 hover:-translate-y-1"
+    tabindex="0"
     @click="!showEdit && emit('open', char)"
+    @keydown.enter="!showEdit && emit('open', char)"
   >
     <div class="relative aspect-square overflow-hidden">
-      <img :src="imageUrl(char.cover)" class="h-full w-full object-cover transition-transform duration-500 group-hover:rotate-1 group-hover:scale-110">
+      <img :src="imageUrl(char.cover)" :alt="`角色 ${char.name} 封面`" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:rotate-1 group-hover:scale-110">
       <div class="absolute inset-0 from-black/0 via-black/0 to-black/60 bg-gradient-to-t transition-all duration-300" />
       <div class="absolute bottom-0 left-0 w-full p-4 pt-10 transition-transform duration-300 group-hover:translate-y-[-4px]">
         <div class="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
@@ -54,12 +56,14 @@ const emit = defineEmits<{
     <div v-if="showEdit" class="character-container absolute right-2 top-2 z-10">
       <button
         class="z-10 h-9 w-9 flex items-center justify-center rounded-full bg-white/90 shadow-md transition-all dark:bg-gray-700/90 hover:bg-blue-500 hover:text-white"
+        aria-label="编辑角色"
         @click="emit('edit')"
       >
         <Edit :size="14" />
       </button>
       <button
         class="delete-btn absolute top-0 h-9 w-9 flex items-center justify-center rounded-full bg-white/90 shadow-md transition-all dark:bg-gray-700/90 hover:bg-red-500 hover:text-white"
+        aria-label="删除角色"
         @click="emit('remove')"
       >
         <Delete :size="14" />
